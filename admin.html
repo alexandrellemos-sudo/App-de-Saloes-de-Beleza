@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Área do salão</title>
-<link href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Amora — Área do salão</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL = "https://erlphppotrvhdpjruvzy.supabase.co";
@@ -13,17 +13,17 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 <style>
 :root{
-  --vinho:#5E1B33; --rosa:#E7A3B6; --rosa-2:#F3CDD8; --blush:#FBEFF2;
-  --tinta:#2B0E19; --suave:#7C5A66; --linha:#EED3DB; --ok:#2F7A5B; --erro:#A3334F;
-  --bg:#FFF8F9; --fg:var(--tinta); --card:#fff;
+  --vinho:#3E1F5C; --rosa:#E0357D; --rosa-2:#F3C6DE; --blush:#F5EDF8;
+  --tinta:#241536; --suave:#7C6B8A; --linha:#E6D9EC; --ok:#2F7A5B; --erro:#A3334F;
+  --bg:#FCFAFD; --fg:var(--tinta); --card:#fff;
   box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){ --bg:#1E0A12; --fg:#F8E6EC; --card:#2A0F1A; --blush:#35131F; --linha:#4A1F2E; --suave:#C9A2B0; }
+  :root:not([data-theme="light"]){ --bg:#160D22; --fg:#F1E9F7; --card:#221334; --blush:#2C1A3F; --linha:#402A54; --suave:#B8A6C9; }
 }
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 Figtree,system-ui,-apple-system,Segoe UI,sans-serif}
-h1,h2,h3{font-family:Gloock,Georgia,serif;font-weight:400;line-height:1.1;margin:0}
+h1,h2,h3{font-family:Sora,Figtree,sans-serif;font-weight:700;line-height:1.15;margin:0}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--rosa);outline-offset:2px}
@@ -47,7 +47,7 @@ button{cursor:pointer}
 
 .topo{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--vinho);color:#fff}
 .topo .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;min-height:60px}
-.topo .marca{font-family:Gloock,Georgia,serif;font-size:1.2rem}
+.topo .marca{font-family:Sora,Figtree,sans-serif;font-weight:700;font-size:1.2rem}
 .sair{background:none;border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:999px;padding:8px 16px;font-size:.85rem;font-weight:700}
 
 .abas{display:flex;gap:8px;overflow-x:auto;padding:16px 20px 0;max-width:1040px;margin:0 auto}
@@ -85,7 +85,7 @@ button{cursor:pointer}
 @media (max-width:720px){ .agenda-grid{grid-template-columns:1fr} }
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .kpi{background:var(--blush);border-radius:16px;padding:14px}
-.kpi b{display:block;font-family:Gloock,serif;font-weight:400;font-size:1.7rem;color:var(--vinho)}
+.kpi b{display:block;font-family:Sora,sans-serif;font-weight:700;font-size:1.6rem;color:var(--vinho)}
 .kpi span{color:var(--suave);font-size:.82rem}
 .kpi.destaque{background:var(--vinho)} .kpi.destaque b{color:var(--rosa-2)} .kpi.destaque span{color:#F6DCE4}
 .hb{display:grid;grid-template-columns:100px 1fr auto;gap:10px;align-items:center;padding:6px 0;font-size:.88rem}
@@ -124,7 +124,7 @@ button{cursor:pointer}
 .seg button{border:0;background:var(--bg);padding:6px 10px;font-size:.76rem;font-weight:700}
 .seg button[aria-pressed="true"]{background:var(--vinho);color:#fff}
 .cupom-card{border:1.5px dashed var(--rosa);border-radius:16px;padding:16px;margin-top:14px}
-.cp-cod{font-family:Gloock,serif;font-size:1.3rem;color:var(--vinho)}
+.cp-cod{font-family:Sora,sans-serif;font-weight:700;font-size:1.2rem;color:var(--vinho)}
 .cp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--blush);border-radius:12px;padding:10px;margin-top:10px}
 .cp-stats b{display:block;color:var(--vinho)} .cp-stats small{color:var(--suave);font-size:.72rem}
 .linkbtn{background:none;border:0;padding:0;font-size:.82rem;font-weight:700;text-decoration:underline;color:var(--suave)}
@@ -140,6 +140,7 @@ button{cursor:pointer}
 .mini-col b{font-size:.8rem;color:var(--vinho);font-weight:700}
 .mini-barra{width:70%;background:var(--vinho);border-radius:6px 6px 0 0;min-height:4px}
 .mini-col small{color:var(--suave);font-size:.68rem}
+.amora-marca{font-family:Sora,sans-serif;font-weight:800;font-size:1.5rem;background:linear-gradient(120deg,var(--vinho),var(--rosa));-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:6px}
 .banner-trial{background:var(--vinho);color:#fff;padding:10px 20px;font-size:.88rem;text-align:center}
 .banner-trial.vencido{background:#A3334F}
 .banner-trial .linkbtn{font-weight:700;font-size:.88rem}
@@ -148,9 +149,11 @@ button{cursor:pointer}
 .plano-card.destaque{border-color:var(--vinho);box-shadow:0 8px 24px -14px rgba(94,27,51,.4)}
 .plano-card.atual{border-color:var(--ok);background:var(--blush)}
 .plano-selo{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--vinho);color:#fff;font-size:.7rem;font-weight:700;padding:4px 12px;border-radius:999px}
-.plano-preco{font-family:Gloock,serif;font-size:1.9rem;color:var(--vinho);margin:10px 0}
+.plano-preco{font-family:Sora,sans-serif;font-weight:800;font-size:1.9rem;color:var(--vinho);margin:10px 0}
 .plano-preco small{font-size:.9rem;font-weight:400;color:var(--suave)}
 .plano-lista{list-style:none;padding:0;margin:0 0 18px;text-align:left;font-size:.86rem;color:var(--suave)}
+.plano-limite{color:var(--suave);font-size:.9rem;margin:0 0 20px}
+.plano-limite b{color:var(--tinta)}
 .plano-lista li{padding:5px 0;border-top:1px solid var(--linha)}
 .plano-lista li:first-child{border-top:0}
 .com-linha{border-top:1px solid var(--linha);padding:14px 0}
@@ -193,7 +196,7 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
 <!-- ===== LOGIN ===== -->
 <div id="telaLogin" class="lock oculto">
   <div class="cartao">
-    <h1>Área do salão</h1>
+    <div class="amora-marca">Amora</div><h1>Área do salão</h1>
     <p class="sub">Entre com o e-mail e a senha cadastrados.</p>
     <label class="campo"><span>E-mail</span><input id="fEmail" type="email" autocomplete="username" placeholder="seuemail@exemplo.com"></label>
     <label class="campo"><span>Senha</span><input id="fSenha" type="password" autocomplete="current-password"></label>
@@ -208,7 +211,7 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
 
 <div id="telaCadastro" class="lock oculto">
   <div class="cartao">
-    <h1>Criar minha conta</h1>
+    <div class="amora-marca">Amora</div><h1>Criar minha conta</h1>
     <p class="sub">7 dias grátis, sem cartão. Em poucos minutos seu site já está no ar.</p>
     <label class="campo"><span>Nome do salão</span><input id="cadNomeSalao" placeholder="Ex.: Espaço Bella Vitta"></label>
     <label class="campo"><span>Seu e-mail</span><input id="cadEmail" type="email" autocomplete="username"></label>
@@ -317,9 +320,9 @@ const TABS={
   clientes:'Clientes', fidelidade:'Fidelidade e cupons', aparencia:'Aparência', assinatura:'Assinatura'
 };
 const PLANOS={
-  essencial:{nome:'Essencial', preco:49.90, limiteClientes:50, destaque:false},
-  profissional:{nome:'Profissional', preco:79.90, limiteClientes:200, destaque:true},
-  avancado:{nome:'Avançado', preco:119.90, limiteClientes:Infinity, destaque:false}
+  essencial:{nome:'Essencial', preco:29.90, limiteClientes:50, publico:'Para profissionais autônomas e salões pequenos', destaque:false},
+  profissional:{nome:'Profissional', preco:49.90, limiteClientes:200, publico:'Para salões em crescimento', destaque:true},
+  avancado:{nome:'Avançado', preco:99.90, limiteClientes:Infinity, publico:'Para salões com uma base maior de clientes', destaque:false}
 };
 function statusAssinatura(){
   if(SALAO.assinatura_status==='ativa') return {liberado:true, plano:SALAO.plano};
@@ -361,18 +364,15 @@ function renderAssinatura(){
     <div class="planos-grid">
       ${Object.entries(PLANOS).map(([key,p])=>`
         <div class="plano-card${p.destaque?' destaque':''}${SALAO.plano===key?' atual':''}">
-          ${p.destaque?'<span class="plano-selo">Mais popular</span>':''}
+          ${p.destaque?'<span class="plano-selo">⭐ Mais escolhido</span>':''}
           <h3>${p.nome}</h3>
+          <p class="sub" style="margin:4px 0 0;font-size:.84rem">${p.publico}</p>
           <div class="plano-preco">${fmt(p.preco)}<small>/mês</small></div>
-          <ul class="plano-lista">
-            <li>Até ${p.limiteClientes===Infinity?'clientes ilimitados':p.limiteClientes+' clientes cadastrados'}</li>
-            <li>Agendamento online</li>
-            <li>Mini CRM e fidelidade</li>
-            <li>Comissões e desempenho</li>
-          </ul>
+          <p class="plano-limite">Até ${p.limiteClientes===Infinity?'<b>clientes ilimitadas</b>':`<b>${p.limiteClientes} clientes</b> cadastradas`}</p>
           ${SALAO.plano===key?'<span class="chip concluido">Plano atual</span>':`<a class="btn ${p.destaque?'btn-vinho':'btn-linha'} btn-sm" style="width:100%;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${SUPORTE_WA.split('?')[0]}?text=${encodeURIComponent(msgAssinar(key))}">Assinar</a>`}
         </div>`).join('')}
-    </div>`;
+    </div>
+    <p class="sub" style="text-align:center;margin-top:20px">Todos os planos incluem tudo que você precisa para começar.<br>A diferença está no tamanho da sua base de clientes.</p>`;
 }
 
 function mostrar(tela){
@@ -1500,6 +1500,7 @@ document.addEventListener('click', async e=>{
 
 (async function iniciar(){
   if(location.hash.includes('type=recovery')){ mostrar('telaNovaSenha'); return; }
+  if(location.hash==='#criar-conta'){ const {data:{session}} = await sb.auth.getSession(); if(!session){ mostrar('telaCadastro'); return; } }
   const {data:{session}} = await sb.auth.getSession();
   if(session){ await carregarSalaoDoDono(session.user.id); }
   else { mostrar('telaLogin'); }
