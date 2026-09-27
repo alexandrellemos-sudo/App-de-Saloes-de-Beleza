@@ -140,6 +140,19 @@ button{cursor:pointer}
 .mini-col b{font-size:.8rem;color:var(--vinho);font-weight:700}
 .mini-barra{width:70%;background:var(--vinho);border-radius:6px 6px 0 0;min-height:4px}
 .mini-col small{color:var(--suave);font-size:.68rem}
+.banner-trial{background:var(--vinho);color:#fff;padding:10px 20px;font-size:.88rem;text-align:center}
+.banner-trial.vencido{background:#A3334F}
+.banner-trial .linkbtn{font-weight:700;font-size:.88rem}
+.planos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.plano-card{position:relative;border:1.5px solid var(--linha);border-radius:18px;padding:22px 18px;text-align:center;background:var(--card)}
+.plano-card.destaque{border-color:var(--vinho);box-shadow:0 8px 24px -14px rgba(94,27,51,.4)}
+.plano-card.atual{border-color:var(--ok);background:var(--blush)}
+.plano-selo{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--vinho);color:#fff;font-size:.7rem;font-weight:700;padding:4px 12px;border-radius:999px}
+.plano-preco{font-family:Gloock,serif;font-size:1.9rem;color:var(--vinho);margin:10px 0}
+.plano-preco small{font-size:.9rem;font-weight:400;color:var(--suave)}
+.plano-lista{list-style:none;padding:0;margin:0 0 18px;text-align:left;font-size:.86rem;color:var(--suave)}
+.plano-lista li{padding:5px 0;border-top:1px solid var(--linha)}
+.plano-lista li:first-child{border-top:0}
 .com-linha{border-top:1px solid var(--linha);padding:14px 0}
 .com-linha:first-of-type{border-top:0}
 .com-topo{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
@@ -187,8 +200,23 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
     <p class="erro" id="loginErro"></p>
     <button class="btn btn-vinho" id="btnEntrar">Entrar</button>
     <button class="linkbtn" id="btnEsqueciSenha" style="display:block;margin:14px auto 0">Esqueci minha senha</button>
+    <p class="sub" style="margin:16px 0 0">Ainda não tem conta? <button class="linkbtn" id="btnIrCadastro" style="font-weight:700">Criar grátis por 7 dias</button></p>
     <a href="/" class="troca">← Voltar ao site</a>
     <a href="#" target="_blank" rel="noopener" class="troca suporte-link" style="margin-top:6px">💬 Falar com o suporte</a>
+  </div>
+</div>
+
+<div id="telaCadastro" class="lock oculto">
+  <div class="cartao">
+    <h1>Criar minha conta</h1>
+    <p class="sub">7 dias grátis, sem cartão. Em poucos minutos seu site já está no ar.</p>
+    <label class="campo"><span>Nome do salão</span><input id="cadNomeSalao" placeholder="Ex.: Espaço Bella Vitta"></label>
+    <label class="campo"><span>Seu e-mail</span><input id="cadEmail" type="email" autocomplete="username"></label>
+    <label class="campo"><span>Crie uma senha</span><input id="cadSenha" type="password" autocomplete="new-password"></label>
+    <label class="campo"><span>Confirme a senha</span><input id="cadSenha2" type="password" autocomplete="new-password"></label>
+    <p class="erro" id="cadErro"></p>
+    <button class="btn btn-vinho" id="btnCriarConta">Criar minha conta</button>
+    <button class="linkbtn" id="btnCadVoltarLogin" style="display:block;margin:14px auto 0">← Já tenho conta</button>
   </div>
 </div>
 
@@ -234,7 +262,9 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
     <button data-tab="clientes">Clientes</button>
     <button data-tab="fidelidade">Fidelidade e cupons</button>
     <button data-tab="aparencia">Aparência</button>
+    <button data-tab="assinatura">Assinatura</button>
   </div>
+  <div id="bannerAssinatura"></div>
   <div class="painel">
     <div class="bloco">
       <h2 id="tituloAba">Agenda</h2>
@@ -284,11 +314,69 @@ let profFiltro='todas';
 let AG_MES=[];
 const TABS={
   agenda:'Agenda', dash:'Desempenho', equipe:'Equipe e comissões', servicos:'Serviços e preços',
-  clientes:'Clientes', fidelidade:'Fidelidade e cupons', aparencia:'Aparência'
+  clientes:'Clientes', fidelidade:'Fidelidade e cupons', aparencia:'Aparência', assinatura:'Assinatura'
 };
+const PLANOS={
+  essencial:{nome:'Essencial', preco:49.90, limiteClientes:50, destaque:false},
+  profissional:{nome:'Profissional', preco:79.90, limiteClientes:200, destaque:true},
+  avancado:{nome:'Avançado', preco:119.90, limiteClientes:Infinity, destaque:false}
+};
+function statusAssinatura(){
+  if(SALAO.assinatura_status==='ativa') return {liberado:true, plano:SALAO.plano};
+  const fim = SALAO.trial_termina_em ? new Date(SALAO.trial_termina_em) : null;
+  if(fim && fim>new Date()) return {liberado:true, trial:true, diasRestantes:Math.max(1,Math.ceil((fim-new Date())/864e5))};
+  return {liberado:false};
+}
+function limiteClientesAtual(){
+  return SALAO.plano && PLANOS[SALAO.plano] ? PLANOS[SALAO.plano].limiteClientes : PLANOS.essencial.limiteClientes;
+}
+function msgAssinar(planoKey){
+  const p=PLANOS[planoKey];
+  return `Oi! Quero assinar o plano *${p.nome}* (${fmt(p.preco)}/mês) do Amora para o salão "${SALAO.nome}".`;
+}
+function renderBannerAssinatura(){
+  const st=statusAssinatura();
+  const el=$('#bannerAssinatura');
+  if(st.liberado && st.trial){
+    el.innerHTML = `<div class="wrap"><div class="banner-trial">Seu teste grátis termina em <b>${st.diasRestantes} dia${st.diasRestantes>1?'s':''}</b>. <button class="linkbtn" data-irassinatura style="color:#fff;text-decoration:underline">Ver planos</button></div></div>`;
+  } else if(!st.liberado){
+    el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">Seu teste grátis acabou. Assine um plano para liberar o restante do painel. <button class="linkbtn" data-irassinatura style="color:#fff;text-decoration:underline">Ver planos</button></div></div>`;
+  } else {
+    el.innerHTML='';
+  }
+}
+document.addEventListener('click', e=>{
+  if(e.target.closest('[data-irassinatura]')) document.querySelector('[data-tab="assinatura"]').click();
+});
+function renderAssinatura(){
+  const st=statusAssinatura();
+  const cartaoStatus = st.trial
+    ? `<div class="grupo2"><span>Seu teste grátis</span><p class="sub" style="margin:0">Termina em <b>${st.diasRestantes} dia${st.diasRestantes>1?'s':''}</b>. Escolha um plano abaixo quando quiser continuar.</p></div>`
+    : st.liberado
+    ? `<div class="grupo2"><span>Seu plano</span><p class="sub" style="margin:0">Você está no plano <b>${PLANOS[SALAO.plano]?.nome||SALAO.plano}</b>. Pra trocar de plano, é só falar com o suporte.</p></div>`
+    : `<div class="grupo2"><span>Teste grátis encerrado</span><p class="sub" style="margin:0">Escolha um plano para voltar a usar o painel completo.</p></div>`;
+  $('#conteudoAba').innerHTML = `
+    ${cartaoStatus}
+    <p class="sub" style="margin:18px 0 14px">Pagamento por cartão chega em breve. Por enquanto, escolha o plano e fale com o suporte pra ativar.</p>
+    <div class="planos-grid">
+      ${Object.entries(PLANOS).map(([key,p])=>`
+        <div class="plano-card${p.destaque?' destaque':''}${SALAO.plano===key?' atual':''}">
+          ${p.destaque?'<span class="plano-selo">Mais popular</span>':''}
+          <h3>${p.nome}</h3>
+          <div class="plano-preco">${fmt(p.preco)}<small>/mês</small></div>
+          <ul class="plano-lista">
+            <li>Até ${p.limiteClientes===Infinity?'clientes ilimitados':p.limiteClientes+' clientes cadastrados'}</li>
+            <li>Agendamento online</li>
+            <li>Mini CRM e fidelidade</li>
+            <li>Comissões e desempenho</li>
+          </ul>
+          ${SALAO.plano===key?'<span class="chip concluido">Plano atual</span>':`<a class="btn ${p.destaque?'btn-vinho':'btn-linha'} btn-sm" style="width:100%;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${SUPORTE_WA.split('?')[0]}?text=${encodeURIComponent(msgAssinar(key))}">Assinar</a>`}
+        </div>`).join('')}
+    </div>`;
+}
 
 function mostrar(tela){
-  ['carregando','telaLogin','app','semSalao','telaRecuperar','telaNovaSenha','telaOnboarding'].forEach(id=>$('#'+id).classList.toggle('oculto', id!==tela));
+  ['carregando','telaLogin','app','semSalao','telaRecuperar','telaNovaSenha','telaOnboarding','telaCadastro'].forEach(id=>$('#'+id).classList.toggle('oculto', id!==tela));
 }
 
 async function carregarSalaoDoDono(userId){
@@ -305,10 +393,13 @@ async function carregarSalaoDoDono(userId){
 
 let abaAtual='agenda';
 function selecionarAba(tab){
+  const st = statusAssinatura();
+  if(!st.liberado && tab!=='agenda' && tab!=='assinatura'){ tab='assinatura'; }
   abaAtual=tab;
   document.querySelectorAll('#abas button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.tab===tab));
   $('#tituloAba').textContent = TABS[tab];
   $('#abas')?.scrollIntoView?.({behavior:'smooth', block:'start'});
+  renderBannerAssinatura();
   if(tab==='agenda'){ carregarMes().then(renderAgenda); }
   else if(tab==='clientes'){ carregarClientes().then(renderClientes); }
   else if(tab==='equipe'){ carregarEquipe().then(renderEquipe); }
@@ -316,6 +407,7 @@ function selecionarAba(tab){
   else if(tab==='dash'){ carregarDashboard().then(renderDashboard); }
   else if(tab==='fidelidade'){ carregarFidelidade().then(renderFidelidade); }
   else if(tab==='aparencia'){ renderAparencia(); }
+  else if(tab==='assinatura'){ renderAssinatura(); }
   else { $('#conteudoAba').innerHTML = '<div class="em-construcao">Em breve.</div>'; }
 }
 
@@ -413,6 +505,37 @@ async function sairETentarOutra(){
 }
 $('#btnEsqueciSenha').onclick = ()=>{ $('#fEmailRecuperar').value = $('#fEmail').value; $('#recuperarErro').textContent=''; mostrar('telaRecuperar'); };
 $('#btnVoltarLogin').onclick = ()=>mostrar('telaLogin');
+$('#btnIrCadastro').onclick = ()=>{ $('#cadErro').textContent=''; mostrar('telaCadastro'); };
+$('#btnCadVoltarLogin').onclick = ()=>mostrar('telaLogin');
+function gerarSlug(nome){
+  const base = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'salao';
+  return base + '-' + Math.random().toString(36).slice(2,6);
+}
+$('#btnCriarConta').onclick = async ()=>{
+  const nomeSalao=$('#cadNomeSalao').value.trim(), email=$('#cadEmail').value.trim(), senha=$('#cadSenha').value, senha2=$('#cadSenha2').value;
+  if(!nomeSalao||!email||!senha){ $('#cadErro').textContent='Preencha todos os campos.'; return; }
+  if(senha.length<6){ $('#cadErro').textContent='A senha precisa ter pelo menos 6 caracteres.'; return; }
+  if(senha!==senha2){ $('#cadErro').textContent='As senhas não são iguais.'; return; }
+  $('#btnCriarConta').disabled=true; $('#btnCriarConta').textContent='Criando…'; $('#cadErro').textContent='';
+  const {data,error} = await sb.auth.signUp({email, password:senha});
+  if(error){
+    $('#cadErro').textContent = error.message.includes('regist')||error.message.includes('exists') ? 'Esse e-mail já tem conta. Faça login.' : 'Não foi possível criar a conta.';
+    $('#btnCriarConta').disabled=false; $('#btnCriarConta').textContent='Criar minha conta';
+    return;
+  }
+  if(!data.session){
+    toast('Confira seu e-mail pra confirmar a conta, depois é só entrar.');
+    mostrar('telaLogin'); $('#btnCriarConta').disabled=false; $('#btnCriarConta').textContent='Criar minha conta';
+    return;
+  }
+  const {error:e2} = await sb.from('saloes').insert({
+    owner_id:data.session.user.id, nome:nomeSalao, slug:gerarSlug(nomeSalao),
+    assinatura_status:'trial', trial_termina_em:new Date(Date.now()+7*864e5).toISOString()
+  });
+  $('#btnCriarConta').disabled=false; $('#btnCriarConta').textContent='Criar minha conta';
+  if(e2){ $('#cadErro').textContent='Conta criada, mas houve um erro ao criar o salão. Fale com o suporte.'; return; }
+  await carregarSalaoDoDono(data.session.user.id);
+};
 $('#btnEnviarRecuperacao').onclick = async ()=>{
   const email = $('#fEmailRecuperar').value.trim();
   if(!email){ $('#recuperarErro').textContent='Digite seu e-mail.'; return; }
@@ -627,6 +750,8 @@ document.addEventListener('click', async e=>{
   if(e.target.id==='ncSalvar'){
     const nome=$('#ncNome').value.trim(), telefone=$('#ncTel').value.replace(/\D/g,'');
     if(!nome || telefone.length<10){ toast('Preencha nome e um WhatsApp válido.'); return; }
+    const limite=limiteClientesAtual();
+    if(CLIENTES.length>=limite){ toast(`Seu plano permite até ${limite} clientes. Assine um plano maior na aba Assinatura pra cadastrar mais.`); return; }
     const tf = clienteNovo.tem_filhos==='sim'?true:clienteNovo.tem_filhos==='nao'?false:null;
     const {error} = await sb.from('clientes').insert({salao_id:SALAO.id, nome, telefone, email:$('#ncEmail').value.trim()||null, aniversario:$('#ncAniv').value||null, tem_filhos:tf});
     if(error){ toast(error.message.includes('duplicate')?'Já existe uma cliente com esse WhatsApp.':'Não foi possível cadastrar.'); return; }
