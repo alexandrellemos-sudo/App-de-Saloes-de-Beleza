@@ -140,6 +140,9 @@ button{cursor:pointer}
 .mini-col b{font-size:.8rem;color:var(--vinho);font-weight:700}
 .mini-barra{width:70%;background:var(--vinho);border-radius:6px 6px 0 0;min-height:4px}
 .mini-col small{color:var(--suave);font-size:.68rem}
+.btn-google{width:100%;background:#fff;color:#3c4043;border:1.5px solid var(--linha);gap:10px;font-weight:600}
+.divisor{display:flex;align-items:center;gap:10px;color:var(--suave);font-size:.8rem;margin:16px 0}
+.divisor::before,.divisor::after{content:"";flex:1;height:1px;background:var(--linha)}
 .amora-marca{font-family:Sora,sans-serif;font-weight:800;font-size:1.5rem;background:linear-gradient(120deg,var(--vinho),var(--rosa));-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:6px}
 .banner-trial{background:var(--vinho);color:#fff;padding:10px 20px;font-size:.88rem;text-align:center}
 .banner-trial.vencido{background:#A3334F}
@@ -198,6 +201,8 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
   <div class="cartao">
     <div class="amora-marca">Amora</div><h1>Área do salão</h1>
     <p class="sub">Entre com o e-mail e a senha cadastrados.</p>
+    <button class="btn btn-google" id="btnGoogleLogin" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Continuar com Google</button>
+    <div class="divisor"><span>ou entre com e-mail</span></div>
     <label class="campo"><span>E-mail</span><input id="fEmail" type="email" autocomplete="username" placeholder="seuemail@exemplo.com"></label>
     <label class="campo"><span>Senha</span><input id="fSenha" type="password" autocomplete="current-password"></label>
     <p class="erro" id="loginErro"></p>
@@ -214,6 +219,8 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
     <div class="amora-marca">Amora</div><h1>Criar minha conta</h1>
     <p class="sub">7 dias grátis, sem cartão. Em poucos minutos seu site já está no ar.</p>
     <label class="campo"><span>Nome do salão</span><input id="cadNomeSalao" placeholder="Ex.: Espaço Bella Vitta"></label>
+    <button class="btn btn-google" id="btnGoogleCadastro" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Cadastrar com Google</button>
+    <div class="divisor"><span>ou crie com e-mail</span></div>
     <label class="campo"><span>Seu e-mail</span><input id="cadEmail" type="email" autocomplete="username"></label>
     <label class="campo"><span>Crie uma senha</span><input id="cadSenha" type="password" autocomplete="new-password"></label>
     <label class="campo"><span>Confirme a senha</span><input id="cadSenha2" type="password" autocomplete="new-password"></label>
@@ -381,16 +388,29 @@ function mostrar(tela){
 
 async function carregarSalaoDoDono(userId){
   let {data, error} = await sb.from('saloes').select('*').eq('owner_id', userId).maybeSingle();
-  if(error || !data){
+  if(!error && !data){
+    // primeira entrada: cria o salão (nome do cadastro, ou do Google, ou um provisório)
     const {data:{user}} = await sb.auth.getUser();
-    const nomePendente = user?.user_metadata?.nome_salao;
-    if(nomePendente){
-      const {data:novo, error:e2} = await sb.from('saloes').insert({
-        owner_id:userId, nome:nomePendente, slug:gerarSlug(nomePendente),
+    const meta = user?.user_metadata || {};
+    let nome = (meta.nome_salao||'').trim();
+    try{ nome = nome || (localStorage.getItem('amora_nome_pendente')||'').trim(); }catch(e){}
+    if(!nome){
+      const primeiro = String(meta.full_name||meta.name||'').trim().split(/\s+/)[0];
+      nome = primeiro ? 'Salão de '+primeiro : 'Meu salão';
+    }
+    for(let i=0;i<3 && !data;i++){
+      const r = await sb.from('saloes').insert({
+        owner_id:userId, nome, slug:gerarSlug(nome),
         assinatura_status:'trial', trial_termina_em:new Date(Date.now()+7*864e5).toISOString()
       }).select().maybeSingle();
-      if(!e2 && novo){ data = novo; error = null; }
+      if(!r.error && r.data){ data = r.data; }
+      else {
+        // pode ter sido criado em paralelo; confere antes de tentar de novo
+        const again = await sb.from('saloes').select('*').eq('owner_id', userId).maybeSingle();
+        if(again.data) data = again.data;
+      }
     }
+    if(data){ error = null; try{ localStorage.removeItem('amora_nome_pendente'); }catch(e){} }
   }
   if(error || !data){ mostrar('semSalao'); return; }
   SALAO = data;
@@ -498,8 +518,24 @@ $('#btnEntrar').onclick = async ()=>{
   $('#btnEntrar').disabled=true; $('#btnEntrar').textContent='Entrando…'; $('#loginErro').textContent='';
   const {data, error} = await sb.auth.signInWithPassword({email, password:senha});
   $('#btnEntrar').disabled=false; $('#btnEntrar').textContent='Entrar';
-  if(error){ $('#loginErro').textContent = error.message==='Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message; return; }
+  if(error){
+    const m = error.message||'';
+    $('#loginErro').textContent = m==='Invalid login credentials' ? 'E-mail ou senha incorretos.'
+      : /not confirmed/i.test(m) ? 'Seu e-mail ainda não foi confirmado. Confira sua caixa de entrada.'
+      : 'Não foi possível entrar. Tente de novo.';
+    return;
+  }
   await carregarSalaoDoDono(data.user.id);
+};
+async function entrarComGoogle(){
+  const {error} = await sb.auth.signInWithOAuth({provider:'google', options:{redirectTo: location.origin + location.pathname, queryParams:{prompt:'select_account'}}});
+  if(error) toast('Não foi possível iniciar o login com Google.');
+}
+$('#btnGoogleLogin').onclick = entrarComGoogle;
+$('#btnGoogleCadastro').onclick = ()=>{
+  const n=$('#cadNomeSalao').value.trim();
+  if(n){ try{ localStorage.setItem('amora_nome_pendente', n); }catch(e){} }
+  entrarComGoogle();
 };
 $('#fSenha').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#btnEntrar').click(); });
 
@@ -529,22 +565,31 @@ $('#btnCriarConta').onclick = async ()=>{
   if(senha.length<6){ $('#cadErro').textContent='A senha precisa ter pelo menos 6 caracteres.'; return; }
   if(senha!==senha2){ $('#cadErro').textContent='As senhas não são iguais.'; return; }
   $('#btnCriarConta').disabled=true; $('#btnCriarConta').textContent='Criando…'; $('#cadErro').textContent='';
+  const fim = ()=>{ $('#btnCriarConta').disabled=false; $('#btnCriarConta').textContent='Criar minha conta'; };
   const {data,error} = await sb.auth.signUp({
     email, password:senha,
-    options: { data: { nome_salao: nomeSalao }, emailRedirectTo: location.origin + '/admin.html' }
+    options: { data: { nome_salao: nomeSalao }, emailRedirectTo: location.origin + location.pathname }
   });
   if(error){
-    $('#cadErro').textContent = error.message.includes('regist')||error.message.includes('exists') ? 'Esse e-mail já tem conta. Faça login.' : 'Não foi possível criar a conta.';
-    $('#btnCriarConta').disabled=false; $('#btnCriarConta').textContent='Criar minha conta';
-    return;
+    $('#cadErro').textContent = /regist|exists/i.test(error.message||'') ? 'Esse e-mail já tem conta. Faça login.' : 'Não foi possível criar a conta.';
+    fim(); return;
   }
-  if(!data.session){
-    toast('Confira seu e-mail pra confirmar a conta, depois é só entrar.');
-    mostrar('telaLogin'); $('#btnCriarConta').disabled=false; $('#btnCriarConta').textContent='Criar minha conta';
-    return;
+  // e-mail já cadastrado: o Supabase devolve um usuário sem identidades
+  if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
+    $('#cadErro').textContent='Esse e-mail já tem conta. Faça login.'; fim(); return;
   }
-  $('#btnCriarConta').disabled=false; $('#btnCriarConta').textContent='Criar minha conta';
-  await carregarSalaoDoDono(data.session.user.id);
+  let session = data.session;
+  if(!session){
+    // sem confirmação de e-mail, o login funciona direto; tenta entrar
+    const r = await sb.auth.signInWithPassword({email, password:senha});
+    if(!r.error) session = r.data.session;
+  }
+  if(!session){
+    toast('Conta criada! Confirme o e-mail que enviamos e depois é só entrar.');
+    mostrar('telaLogin'); fim(); return;
+  }
+  fim();
+  await carregarSalaoDoDono(session.user.id);
 };
 $('#btnEnviarRecuperacao').onclick = async ()=>{
   const email = $('#fEmailRecuperar').value.trim();
@@ -1438,7 +1483,7 @@ const WIZ_TOTAL=5;
 const wiz={nome:'',whatsapp:'',endereco:'',cor_principal:'#5E1B33',cor_destaque:'#E7A3B6',cor_texto:'#5E1B33',profNome:'',profTelefone:'',servNome:'',servDuracao:60,servPreco:0};
 function iniciarWizard(){
   wizStep=0;
-  wiz.nome=SALAO.nome||''; wiz.whatsapp=SALAO.whatsapp||''; wiz.endereco=SALAO.endereco||'';
+  wiz.nome=(SALAO.nome==='Meu salão')?'':(SALAO.nome||''); wiz.whatsapp=SALAO.whatsapp||''; wiz.endereco=SALAO.endereco||'';
   wiz.cor_principal=SALAO.cor_principal||'#5E1B33'; wiz.cor_destaque=SALAO.cor_destaque||'#E7A3B6'; wiz.cor_texto=SALAO.cor_texto||wiz.cor_principal;
   renderWizard();
 }
