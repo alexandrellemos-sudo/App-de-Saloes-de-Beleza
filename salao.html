@@ -16,7 +16,7 @@
    ===================================================================== */
 const SUPABASE_URL = "https://erlphppotrvhdpjruvzy.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVybHBocHBvdHJ2aGRwanJ1dnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzODI0MDcsImV4cCI6MjEwNTk1ODQwN30.ckrDD7hjN2pueY1xk9aTWWHUetZMv81uyxE99LE58-o";
-const SALAO_SLUG = "casa-malva";
+const SALAO_SLUG = new URLSearchParams(location.search).get('s') || "casa-malva";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 <style>

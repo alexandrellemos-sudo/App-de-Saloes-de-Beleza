@@ -204,7 +204,7 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
     <button class="btn btn-vinho" id="btnEntrar">Entrar</button>
     <button class="linkbtn" id="btnEsqueciSenha" style="display:block;margin:14px auto 0">Esqueci minha senha</button>
     <p class="sub" style="margin:16px 0 0">Ainda não tem conta? <button class="linkbtn" id="btnIrCadastro" style="font-weight:700">Criar grátis por 7 dias</button></p>
-    <a href="/" class="troca">← Voltar ao site</a>
+    <a href="index.html" class="troca">← Voltar ao site</a>
     <a href="#" target="_blank" rel="noopener" class="troca suporte-link" style="margin-top:6px">💬 Falar com o suporte</a>
   </div>
 </div>
@@ -251,7 +251,7 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
     <div class="wrap">
       <div class="marca" id="nomeSalaoTopo"></div>
       <div style="display:flex;gap:10px;align-items:center">
-        <a class="sair" href="/" style="text-decoration:none;display:inline-flex;align-items:center">Ver site</a>
+        <a class="sair" id="linkVerSite" href="salao.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Ver site</a>
         <a class="sair suporte-link" href="#" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Suporte</a>
         <button class="sair" id="btnSair">Sair</button>
       </div>
@@ -292,7 +292,7 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
     <h1>Conta sem salão</h1>
     <p class="sub">Este login existe, mas não está vinculado a nenhum salão. Fale com o suporte.</p>
     <button class="btn btn-linha" id="btnSairSemSalao" style="width:100%">Sair e tentar outra conta</button>
-    <a href="/" class="troca">← Voltar ao site</a>
+    <a href="index.html" class="troca">← Voltar ao site</a>
     <a href="#" target="_blank" rel="noopener" class="troca suporte-link" style="margin-top:6px">💬 Falar com o suporte</a>
   </div>
 </div>
@@ -380,10 +380,22 @@ function mostrar(tela){
 }
 
 async function carregarSalaoDoDono(userId){
-  const {data, error} = await sb.from('saloes').select('*').eq('owner_id', userId).maybeSingle();
+  let {data, error} = await sb.from('saloes').select('*').eq('owner_id', userId).maybeSingle();
+  if(error || !data){
+    const {data:{user}} = await sb.auth.getUser();
+    const nomePendente = user?.user_metadata?.nome_salao;
+    if(nomePendente){
+      const {data:novo, error:e2} = await sb.from('saloes').insert({
+        owner_id:userId, nome:nomePendente, slug:gerarSlug(nomePendente),
+        assinatura_status:'trial', trial_termina_em:new Date(Date.now()+7*864e5).toISOString()
+      }).select().maybeSingle();
+      if(!e2 && novo){ data = novo; error = null; }
+    }
+  }
   if(error || !data){ mostrar('semSalao'); return; }
   SALAO = data;
   $('#nomeSalaoTopo').textContent = SALAO.nome;
+  $('#linkVerSite').href = 'salao.html?s=' + encodeURIComponent(SALAO.slug);
   const {data:profs} = await sb.from('profissionais').select('id,nome').eq('salao_id', SALAO.id).eq('ativo', true).order('nome');
   PROFISSIONAIS = profs||[];
   if(!SALAO.onboarding_concluido){ mostrar('telaOnboarding'); iniciarWizard(); return; }
@@ -497,7 +509,7 @@ async function deslogar(){
 }
 async function sair(){
   await deslogar();
-  location.href = '/';
+  location.href = 'index.html';
 }
 async function sairETentarOutra(){
   await deslogar();
@@ -517,7 +529,10 @@ $('#btnCriarConta').onclick = async ()=>{
   if(senha.length<6){ $('#cadErro').textContent='A senha precisa ter pelo menos 6 caracteres.'; return; }
   if(senha!==senha2){ $('#cadErro').textContent='As senhas não são iguais.'; return; }
   $('#btnCriarConta').disabled=true; $('#btnCriarConta').textContent='Criando…'; $('#cadErro').textContent='';
-  const {data,error} = await sb.auth.signUp({email, password:senha});
+  const {data,error} = await sb.auth.signUp({
+    email, password:senha,
+    options: { data: { nome_salao: nomeSalao }, emailRedirectTo: location.origin + '/admin.html' }
+  });
   if(error){
     $('#cadErro').textContent = error.message.includes('regist')||error.message.includes('exists') ? 'Esse e-mail já tem conta. Faça login.' : 'Não foi possível criar a conta.';
     $('#btnCriarConta').disabled=false; $('#btnCriarConta').textContent='Criar minha conta';
@@ -528,12 +543,7 @@ $('#btnCriarConta').onclick = async ()=>{
     mostrar('telaLogin'); $('#btnCriarConta').disabled=false; $('#btnCriarConta').textContent='Criar minha conta';
     return;
   }
-  const {error:e2} = await sb.from('saloes').insert({
-    owner_id:data.session.user.id, nome:nomeSalao, slug:gerarSlug(nomeSalao),
-    assinatura_status:'trial', trial_termina_em:new Date(Date.now()+7*864e5).toISOString()
-  });
   $('#btnCriarConta').disabled=false; $('#btnCriarConta').textContent='Criar minha conta';
-  if(e2){ $('#cadErro').textContent='Conta criada, mas houve um erro ao criar o salão. Fale com o suporte.'; return; }
   await carregarSalaoDoDono(data.session.user.id);
 };
 $('#btnEnviarRecuperacao').onclick = async ()=>{
@@ -1458,8 +1468,14 @@ function renderWizard(){
       <label class="campo2"><span>Duração (min)</span><input type="number" id="wzServDur" value="${wiz.servDuracao}" min="5" step="5"></label>
       <label class="campo2"><span>Preço (R$)</span><input type="number" id="wzServPreco" value="${wiz.servPreco}" min="0"></label>`;
   } else {
+    const linkSite = location.origin + '/salao.html?s=' + encodeURIComponent(SALAO.slug);
     h=`<div class="wiz-check">✓</div><h2 style="text-align:center">Tudo pronto!</h2>
-      <p class="sub" style="text-align:center">Seu site já está no ar com o essencial. Explore o painel pra ajustar o resto quando quiser — e o suporte está sempre ali em cima se precisar.</p>`;
+      <p class="sub" style="text-align:center">Seu site já está no ar. Compartilhe o link com suas clientes:</p>
+      <div class="exc-form" style="text-align:center;word-break:break-all">
+        <b style="color:var(--vinho)">${escH(linkSite)}</b>
+        <div style="margin-top:10px"><button class="btn btn-linha btn-sm" type="button" id="wzCopiarLink">Copiar link</button></div>
+      </div>
+      <p class="sub" style="text-align:center;margin-top:14px">Explore o painel pra ajustar o resto quando quiser — e o suporte está sempre ali em cima se precisar.</p>`;
   }
   h += `<div class="nav" style="margin-top:20px">
     ${wizStep>0 && wizStep<WIZ_TOTAL-1 ? `<button class="btn btn-linha" id="wzVoltar">Voltar</button>` : '<span></span>'}
@@ -1473,6 +1489,12 @@ document.addEventListener('click', async e=>{
   const pal=e.target.closest('[data-wzpaleta]');
   if(pal){ const pl=PALETAS[+pal.dataset.wzpaleta]; wiz.cor_principal=pl.p; wiz.cor_destaque=pl.d; wiz.cor_texto=pl.t; renderWizard(); return; }
   if(e.target.id==='wzVoltar'){ wizStep--; renderWizard(); return; }
+  if(e.target.id==='wzCopiarLink'){
+    const link = location.origin + '/salao.html?s=' + encodeURIComponent(SALAO.slug);
+    try{ await navigator.clipboard.writeText(link); toast('Link copiado'); }
+    catch(err){ toast('Não foi possível copiar automaticamente. Selecione e copie manualmente.'); }
+    return;
+  }
   if(e.target.id==='wzPular'){
     await sb.from('saloes').update({onboarding_concluido:true}).eq('id',SALAO.id);
     SALAO.onboarding_concluido=true; mostrar('app'); selecionarAba('agenda'); return;
