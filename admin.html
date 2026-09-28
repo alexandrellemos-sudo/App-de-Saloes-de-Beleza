@@ -140,6 +140,24 @@ button{cursor:pointer}
 .mini-col b{font-size:.8rem;color:var(--vinho);font-weight:700}
 .mini-barra{width:70%;background:var(--vinho);border-radius:6px 6px 0 0;min-height:4px}
 .mini-col small{color:var(--suave);font-size:.68rem}
+.wz-cab,.wz-linha{display:grid;grid-template-columns:1fr 74px 88px 26px;gap:8px;align-items:center}
+.wz-cab{font-size:.72rem;color:var(--suave);margin-bottom:4px}
+.wz-linha{margin-bottom:8px}
+.wz-linha input{width:100%;min-width:0;padding:9px 10px;border-radius:10px;border:1.5px solid var(--linha);background:var(--bg);font:inherit}
+.wz-colab{border:1.5px solid var(--linha);border-radius:16px;padding:14px;margin-bottom:12px;background:var(--card)}
+.wz-av{width:52px;height:52px;border-radius:50%;overflow:hidden;background:var(--blush);display:grid;place-items:center;font-size:.65rem;color:var(--suave);flex-shrink:0}
+.wz-av img{width:100%;height:100%;object-fit:cover}
+.wz-rot{display:block;font-size:.82rem;color:var(--suave);margin-bottom:6px}
+.sc-livre summary{cursor:pointer;color:var(--vinho);font-weight:600;margin:12px 0 8px}
+.sc-cores{display:flex;gap:16px;flex-wrap:wrap}
+.sc-prev{border:1px solid var(--linha);border-radius:14px;overflow:hidden;margin-top:14px;max-width:340px}
+.scp-topo{padding:10px 14px;font-weight:700}
+.scp-corpo{background:#FFF8F9;padding:14px}
+.scp-titulo{font-family:Sora,sans-serif;font-weight:700;margin-bottom:10px}
+.scp-linha{display:flex;gap:10px;align-items:center}
+.scp-btn{padding:7px 14px;border-radius:999px;font-weight:700;font-size:.85rem}
+.scp-hora{padding:6px 12px;border-radius:8px;border:1.5px solid;font-weight:600;font-size:.85rem}
+.sc-avisos{color:var(--erro);font-size:.84rem;min-height:1.2em;margin:8px 0 0}
 .btn-google{width:100%;background:#fff;color:#3c4043;border:1.5px solid var(--linha);gap:10px;font-weight:600}
 .divisor{display:flex;align-items:center;gap:10px;color:var(--suave);font-size:.8rem;margin:16px 0}
 .divisor::before,.divisor::after{content:"";flex:1;height:1px;background:var(--linha)}
@@ -418,7 +436,7 @@ async function carregarSalaoDoDono(userId){
   $('#linkVerSite').href = 'salao.html?s=' + encodeURIComponent(SALAO.slug);
   const {data:profs} = await sb.from('profissionais').select('id,nome').eq('salao_id', SALAO.id).eq('ativo', true).order('nome');
   PROFISSIONAIS = profs||[];
-  if(!SALAO.onboarding_concluido){ mostrar('telaOnboarding'); iniciarWizard(); return; }
+  if(!SALAO.onboarding_concluido){ mostrar('telaOnboarding'); await iniciarWizard(); return; }
   mostrar('app');
   selecionarAba('agenda');
 }
@@ -914,25 +932,39 @@ async function carregarEquipe(){
   await carregarComissoes();
 }
 const regraServ=(pid,sid)=>{ const r=PROF_SERV_ADM.find(x=>x.profissional_id===pid&&x.servico_id===sid); return r?.comissao||null; };
+function gerarHoras(abre, fecha, passo){
+  const m=h=>{ const [a,b]=String(h).split(':'); return (+a)*60+(+b); }, out=[];
+  for(let t=m(abre); t+passo<=m(fecha); t+=passo) out.push(String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'));
+  return out;
+}
+function horasSalao(){ return gerarHoras(SALAO.horario_abre||'09:00', SALAO.horario_fecha||'19:00', SALAO.horario_intervalo||60); }
+function horasParaChips(extras){ return [...new Set([...horasSalao(), ...(extras||[])])].sort(); }
+function rotuloServicosProf(pid){
+  const nomes=SERVICOS_ADM.filter(s=>s.ativo && PROF_SERV_ADM.some(x=>x.profissional_id===pid && x.servico_id===s.id)).map(s=>s.nome);
+  return nomes.length>3 ? nomes.slice(0,3).join(' · ')+' +'+(nomes.length-3) : nomes.join(' · ');
+}
 function cardProfissional(p){
     const meus = PROF_SERV_ADM.filter(x=>x.profissional_id===p.id).map(x=>x.servico_id);
+    const servAtivos = SERVICOS_ADM.filter(s=>s.ativo);
     const d = DESEMP_MES.find(x=>x.profissional_id===p.id) || {atendimentos:0,faturado:0,comissao:0,faltas:0};
     return `<div class="eq-card" data-eqcard="${p.id}">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
         <div style="width:64px;height:64px;border-radius:50%;overflow:hidden;background:var(--blush);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--suave);font-size:.7rem">${p.foto_url?`<img src="${escH(p.foto_url)}" alt="" style="width:100%;height:100%;object-fit:cover">`:'sem foto'}</div>
         <label class="linkbtn" style="cursor:pointer">Trocar foto<input type="file" accept="image/png,image/jpeg,image/webp" data-eqfoto="${p.id}" style="display:none"></label>
       </div>
-      <div class="eq-topo">
-        <label class="campo2"><span>Nome</span><input data-eqf="nome" value="${escH(p.nome)}"></label>
-        <label class="campo2"><span>Especialidade</span><input data-eqf="especialidade" value="${escH(p.especialidade||'')}"></label>
-      </div>
+      <label class="campo2"><span>Nome</span><input data-eqf="nome" value="${escH(p.nome)}"></label>
       <label class="campo2"><span>WhatsApp da profissional (opcional, pra enviar recibo de comissão)</span><input data-eqf="telefone" value="${escH(p.telefone||'')}" inputmode="tel" placeholder="(13) 99999-9999"></label>
+      <div class="grupo2"><span>Serviços que ela faz</span>
+        ${servAtivos.length ? `<p class="sub" style="margin:0 0 10px;font-size:.82rem">Define com quais serviços a cliente pode agendar com ela e o que aparece como especialidade no site.</p>
+        <div class="chips2">${servAtivos.map(s=>`<button type="button" data-eqservtoggle="${s.id}" aria-pressed="${meus.includes(s.id)}">${escH(s.nome)}</button>`).join('')}</div>`
+        : `<p class="sub" style="margin:0;font-size:.85rem">Cadastre serviços na aba Serviços e preços para marcá-los aqui.</p>`}
+      </div>
       <div class="grupo2"><span>Comissão padrão</span>
         <div class="seg" style="margin-bottom:8px">${['pct','fixo'].map(t=>`<button data-eqcomtipo="${t}" aria-pressed="${p.comissao.tipo===t}">${t==='pct'?'%':'R$'}</button>`).join('')}</div>
         <input type="number" min="0" data-eqf="comvalor" value="${p.comissao.valor}" style="width:100px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--linha)">
       </div>
       <div class="grupo2"><span>Dias de atendimento</span><div class="chips2">${[1,2,3,4,5,6,0].map(dn=>`<button data-eqdia="${dn}" aria-pressed="${p.dias.includes(dn)}">${DIAS_N[dn]}</button>`).join('')}</div></div>
-      <div class="grupo2"><span>Horários</span><div class="chips2">${['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'].map(h=>`<button data-eqhora="${h}" aria-pressed="${p.horas.includes(h)}">${h}</button>`).join('')}</div></div>
+      <div class="grupo2"><span>Horários</span><div class="chips2">${horasParaChips(p.horas).map(h=>`<button data-eqhora="${h}" aria-pressed="${p.horas.includes(h)}">${h}</button>`).join('')}</div></div>
       <div class="grupo2"><span>Dias especiais (folgas, spot, alta temporada)</span>
         <p class="sub" style="margin:0 0 10px;font-size:.82rem">Use aqui pra bloquear um dia que ela normalmente atenderia, ou liberar um dia extra fora da rotina — sem mexer nos dias e horários fixos acima.</p>
         ${excecoesDe(p.id).map(e=>`<div class="exc-item"><span>${new Date(e.data+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})}</span><span class="tag ${e.tipo==='bloqueio'?'sumida':'nova'}">${e.tipo==='bloqueio'?'Bloqueado':'Extra: '+(e.horas||[]).join(', ')}</span><button class="linkbtn rm" data-excremover="${e.id}">Remover</button></div>`).join('') || '<p class="sub" style="font-size:.82rem">Nenhum dia especial cadastrado.</p>'}
@@ -940,14 +972,15 @@ function cardProfissional(p){
           <div class="exc-form">
             <label class="campo2"><span>Data</span><input type="date" id="excData" value="${excDraft.data}" min="${ymdL(new Date())}"></label>
             <div class="seg" style="margin:8px 0"><button data-exctipo="bloqueio" aria-pressed="${excDraft.tipo==='bloqueio'}">Bloquear o dia</button><button data-exctipo="extra" aria-pressed="${excDraft.tipo==='extra'}">Liberar dia extra</button></div>
-            ${excDraft.tipo==='extra'?`<div class="chips2">${['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'].map(h=>`<button data-exchora="${h}" aria-pressed="${excDraft.horas.includes(h)}">${h}</button>`).join('')}</div>`:''}
+            ${excDraft.tipo==='extra'?`<div class="chips2">${horasParaChips(excDraft.horas).map(h=>`<button data-exchora="${h}" aria-pressed="${excDraft.horas.includes(h)}">${h}</button>`).join('')}</div>`:''}
             <div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-vinho btn-sm" data-excsalvar="${p.id}">Salvar dia especial</button><button class="btn btn-linha btn-sm" id="excCancelar">Cancelar</button></div>
           </div>` : `<button class="linkbtn" data-excabrir="${p.id}" style="margin-top:6px">+ Adicionar dia especial</button>`}
       </div>
-      ${SERVICOS_ADM.filter(s=>s.ativo).length?`<div class="grupo2"><span>Comissão por serviço (opcional)</span>${SERVICOS_ADM.filter(s=>s.ativo&&meus.includes(s.id)).map(s=>{
+      ${meus.length?`<div class="grupo2"><span>Comissão por serviço (opcional)</span>${SERVICOS_ADM.filter(s=>s.ativo&&meus.includes(s.id)).map(s=>{
         const r=regraServ(p.id,s.id), t=r?r.tipo:'padrao';
         return `<div class="cs2" data-eqsid="${s.id}"><span>${escH(s.nome)}</span><div class="seg">${['padrao','pct','fixo'].map(k=>`<button data-eqcstipo="${k}" aria-pressed="${t===k}">${k==='padrao'?'Padrão':k==='pct'?'%':'R$'}</button>`).join('')}</div>${r?`<input type="number" min="0" data-eqcsvalor value="${r.valor}">`:'<span></span>'}</div>`;
-      }).join('')}<div style="margin-top:8px"><span style="font-size:.8rem;color:var(--suave)">Marque os serviços que ela faz:</span> <div class="chips2" style="margin-top:6px">${SERVICOS_ADM.filter(s=>s.ativo).map(s=>`<button data-eqservtoggle="${s.id}" aria-pressed="${meus.includes(s.id)}">${escH(s.nome)}</button>`).join('')}</div></div></div>`:''}
+      }).join('')}</div>`:''}
+
       <div class="kpis" style="margin-top:14px">
         <div class="kpi"><b>${d.atendimentos}</b><span>atendimentos no mês</span></div>
         <div class="kpi"><b>${fmt(d.faturado)}</b><span>faturado</span></div>
@@ -969,7 +1002,7 @@ function renderListaProfissionais(){
         const ini = p.nome.split(' ').map(x=>x[0]).slice(0,2).join('');
         return `<div class="cli" data-abrirprof="${p.id}" style="cursor:pointer">
           <div class="av">${p.foto_url?`<img src="${escH(p.foto_url)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:escH(ini)}</div>
-          <div>${escH(p.nome)}${p.ativo?'':' <span class="tag sumida">Inativa</span>'}<small>${escH(p.especialidade||'Sem especialidade')} · ${d.atendimentos} atend. no mês · ${fmt(d.faturado)}</small></div>
+          <div>${escH(p.nome)}${p.ativo?'':' <span class="tag sumida">Inativa</span>'}<small>${escH(rotuloServicosProf(p.id)||'Nenhum serviço marcado')} · ${d.atendimentos} atend. no mês · ${fmt(d.faturado)}</small></div>
           <span class="linkbtn">Ver ficha →</span>
         </div>`;
       }).join('') : '<p class="vazio">Nenhuma profissional encontrada.</p>'}</div>
@@ -1010,12 +1043,11 @@ function coletarCard(pid){
   const card = document.querySelector(`[data-eqcard="${pid}"]`);
   const p = PROFISSIONAIS.find(x=>x.id===pid);
   const nome = card.querySelector('[data-eqf="nome"]').value.trim();
-  const especialidade = card.querySelector('[data-eqf="especialidade"]').value.trim();
   const telefone = card.querySelector('[data-eqf="telefone"]').value.replace(/\D/g,'') || null;
   const comissao = { tipo: card.querySelector('[data-eqcomtipo][aria-pressed="true"]').dataset.eqcomtipo, valor: Number(card.querySelector('[data-eqf="comvalor"]').value)||0 };
   const dias = [...card.querySelectorAll('[data-eqdia][aria-pressed="true"]')].map(b=>+b.dataset.eqdia);
   const horas = [...card.querySelectorAll('[data-eqhora][aria-pressed="true"]')].map(b=>b.dataset.eqhora);
-  return {nome, especialidade, telefone, comissao, dias, horas};
+  return {nome, telefone, comissao, dias, horas};
 }
 document.addEventListener('click', async e=>{
   if(abaAtual!=='equipe' && abaAtual!=='servicos') return;
@@ -1057,6 +1089,7 @@ document.addEventListener('click', async e=>{
     }
     if(e.target.matches('[data-eqservtoggle]')){
       const sid=e.target.dataset.eqservtoggle, on=e.target.getAttribute('aria-pressed')==='true';
+      await sb.from('profissionais').update(coletarCard(pid)).eq('id',pid);
       if(on) await sb.from('profissional_servicos').delete().eq('profissional_id',pid).eq('servico_id',sid);
       else await sb.from('profissional_servicos').insert({profissional_id:pid, servico_id:sid, comissao:null});
       await carregarEquipe(); renderEquipe(); return;
@@ -1074,8 +1107,8 @@ document.addEventListener('click', async e=>{
     }
   }
   if(e.target.id==='eqAdd'){
-    await sb.from('profissionais').insert({salao_id:SALAO.id, nome:'Nova profissional', dias:[2,3,4,5,6], horas:['09:00','10:00','11:00','14:00','15:00','16:00'], comissao:{tipo:'pct',valor:40}});
-    await carregarEquipe(); renderEquipe(); return;
+    const {data:nova} = await sb.from('profissionais').insert({salao_id:SALAO.id, nome:'Nova profissional', dias:SALAO.horario_dias||[2,3,4,5,6], horas:horasSalao(), comissao:{tipo:'pct',valor:40}}).select('id').maybeSingle();
+    await carregarEquipe(); if(nova) profissionalAberta=nova.id; renderEquipe(); return;
   }
   if(e.target.dataset.combaixaabrir){ comBaixaAberta=e.target.dataset.combaixaabrir; renderEquipe(); return; }
   if(e.target.id==='comBaixaCancelar'){ comBaixaAberta=null; renderEquipe(); return; }
@@ -1141,7 +1174,7 @@ document.addEventListener('change', async e=>{
   if(abaAtual!=='equipe') return;
   if(e.target.dataset.eqfoto && e.target.files[0]){
     const pid = e.target.dataset.eqfoto;
-    const r = await subirImagem(e.target.files[0], 'prof-'+pid);
+    const r = await subirImagem(e.target.files[0], 'prof-'+pid, 800);
     if(r.error){ toast(r.error); return; }
     const {error} = await sb.from('profissionais').update({foto_url:r.url}).eq('id', pid);
     if(error){ toast('Não foi possível salvar a foto.'); return; }
@@ -1322,9 +1355,26 @@ document.addEventListener('click', async e=>{
 /* ---------------- APARÊNCIA ---------------- */
 const BUCKET='salao-assets';
 function extValido(nome){ return /\.(png|jpe?g|webp)$/i.test(nome); }
-async function subirImagem(file, prefixo){
+// reduz fotos grandes (celular) antes de enviar; se o navegador não conseguir, envia a original
+async function otimizarImagem(file, maxLado){
+  try{
+    if(typeof createImageBitmap!=='function') return file;
+    const bmp = await createImageBitmap(file);
+    const escala = Math.min(1, maxLado/Math.max(bmp.width,bmp.height));
+    if(escala>=1 && file.size<=1.5*1024*1024){ if(bmp.close) bmp.close(); return file; }
+    const w=Math.max(1,Math.round(bmp.width*escala)), h=Math.max(1,Math.round(bmp.height*escala));
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(bmp,0,0,w,h); if(bmp.close) bmp.close();
+    const tipo = file.type==='image/png' ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise(res=>cv.toBlob(res, tipo, .85));
+    if(!blob || (escala>=1 && blob.size>=file.size)) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/,'')+(tipo==='image/png'?'.png':'.jpg'), {type:tipo});
+  }catch(err){ return file; }
+}
+async function subirImagem(file, prefixo, maxLado=1600){
   if(!extValido(file.name)) return {error:'Use uma imagem PNG, JPG ou WEBP.'};
-  if(file.size > 5*1024*1024) return {error:'A imagem precisa ter até 5 MB.'};
+  file = await otimizarImagem(file, maxLado);
+  if(file.size > 5*1024*1024) return {error:'A imagem é muito grande. Escolha uma menor.'};
   const ext = file.name.split('.').pop().toLowerCase();
   const path = `${SALAO.id}/${prefixo}-${Date.now()}.${ext}`;
   const {error} = await sb.storage.from(BUCKET).upload(path, file, {upsert:true});
@@ -1338,8 +1388,70 @@ const PALETAS=[
   {n:'Preto & Dourado', p:'#1E1B18', d:'#C9A16B', t:'#1E1B18'},
   {n:'Petróleo & Coral', p:'#14424D', d:'#E8836B', t:'#14424D'},
   {n:'Lilás & Lavanda', p:'#5B4B8A', d:'#C9B6E4', t:'#423368'},
-  {n:'Terracota & Creme', p:'#A0522D', d:'#F0DFC8', t:'#7A3B1E'}
+  {n:'Terracota & Creme', p:'#A0522D', d:'#F0DFC8', t:'#7A3B1E'},
+  {n:'Azul-marinho & Areia', p:'#1F3A5F', d:'#E8D5B5', t:'#1F3A5F'},
+  {n:'Verde-floresta & Menta', p:'#1E4D3A', d:'#BFE3CF', t:'#1E4D3A'},
+  {n:'Ameixa & Pêssego', p:'#5B2A4E', d:'#F6C3A5', t:'#5B2A4E'},
+  {n:'Grafite & Rosé', p:'#2F3437', d:'#F2B8C6', t:'#2F3437'},
+  {n:'Bordô & Champagne', p:'#6B1E2E', d:'#EAD7A8', t:'#6B1E2E'},
+  {n:'Oliva & Manteiga', p:'#4A5230', d:'#F1E3A6', t:'#4A5230'},
+  {n:'Café & Caramelo', p:'#4B2E22', d:'#E3B682', t:'#4B2E22'},
+  {n:'Índigo & Rosa-chá', p:'#33307A', d:'#F4C9D8', t:'#33307A'},
+  {n:'Esmeralda & Rosa-antigo', p:'#0B5D4B', d:'#F0C8C2', t:'#0B5D4B'},
+  {n:'Amora & Lima', p:'#3E1F5C', d:'#D8F0A5', t:'#3E1F5C'},
+  {n:'Magenta & Blush', p:'#9C1F5C', d:'#FAD1E3', t:'#9C1F5C'},
+  {n:'Azul-petróleo & Ouro-rosê', p:'#163A47', d:'#F0C9B0', t:'#163A47'}
 ];
+
+/* ---- contraste e seletor de cores (usado no onboarding e na aba Aparência) ---- */
+function lumHex(hex){
+  const m=/^#?([0-9a-f]{6})$/i.exec(hex||''); if(!m) return 0;
+  const n=parseInt(m[1],16);
+  const c=[(n>>16)&255,(n>>8)&255,n&255].map(v=>{ v/=255; return v<=.03928 ? v/12.92 : Math.pow((v+.055)/1.055,2.4); });
+  return .2126*c[0]+.7152*c[1]+.0722*c[2];
+}
+function contrasteHex(a,b){ const l1=lumHex(a), l2=lumHex(b); return (Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05); }
+function textoLegivel(fundo, opcoes){
+  for(const o of opcoes){ if(contrasteHex(o,fundo)>=4.5) return o; }
+  return opcoes.reduce((m,o)=>contrasteHex(o,fundo)>contrasteHex(m,fundo)?o:m, opcoes[0]);
+}
+function seletorCoresHTML(ctx, v){
+  const igual=(pl)=>pl.p.toLowerCase()===String(v.p).toLowerCase() && pl.d.toLowerCase()===String(v.d).toLowerCase();
+  const ativa = PALETAS.findIndex(igual);
+  return `<div class="sc" data-sc="${ctx}">
+    <div class="paletas">${PALETAS.map((pl,i)=>`<button type="button" class="paleta" data-sc-paleta="${i}" aria-pressed="${i===ativa}"><span class="bolinhas"><span style="background:${pl.p}"></span><span style="background:${pl.d}"></span><span style="background:${pl.t}"></span></span><small>${escH(pl.n)}</small></button>`).join('')}</div>
+    <details class="sc-livre"${ativa<0?' open':''}><summary>Personalizar as cores</summary>
+      <div class="sc-cores">
+        <label class="campo2"><span>Cor principal</span><input type="color" data-sc-cor="p" value="${v.p}"></label>
+        <label class="campo2"><span>Cor de destaque</span><input type="color" data-sc-cor="d" value="${v.d}"></label>
+        <label class="campo2"><span>Cor dos títulos</span><input type="color" data-sc-cor="t" value="${v.t}"></label>
+      </div>
+    </details>
+    <div class="sc-prev" data-sc-prev></div>
+    <p class="sc-avisos" data-sc-avisos></p>
+  </div>`;
+}
+function scValores(sc){ const g=k=>sc.querySelector(`[data-sc-cor="${k}"]`).value; return {p:g('p'), d:g('d'), t:g('t')}; }
+function scAtualizar(sc){
+  const v=scValores(sc);
+  const sobreP=textoLegivel(v.p,['#ffffff','#1a1a1a']), sobreD=textoLegivel(v.d,[v.p,'#ffffff','#1a1a1a']);
+  sc.querySelectorAll('[data-sc-paleta]').forEach((b,i)=>b.setAttribute('aria-pressed', PALETAS[i].p.toLowerCase()===v.p.toLowerCase() && PALETAS[i].d.toLowerCase()===v.d.toLowerCase()));
+  sc.querySelector('[data-sc-prev]').innerHTML = `<div class="scp-topo" style="background:${v.p};color:${sobreP}">Seu salão</div>
+    <div class="scp-corpo"><div class="scp-titulo" style="color:${v.t}">Agende seu horário</div>
+      <div class="scp-linha"><span class="scp-btn" style="background:${v.p};color:${sobreP}">Agendar</span><span class="scp-hora" style="background:${v.d};color:${sobreD};border-color:${v.p}">10:00</span></div></div>`;
+  const av=[];
+  if(contrasteHex(v.t,'#FFF8F9')<3) av.push('A cor dos títulos está clara demais e pode ficar difícil de ler.');
+  if(contrasteHex(v.p,v.d)<1.6) av.push('A cor principal e a de destaque estão muito parecidas.');
+  sc.querySelector('[data-sc-avisos]').textContent = av.join(' ');
+}
+function iniciarSeletoresCores(){ document.querySelectorAll('.sc').forEach(scAtualizar); }
+document.addEventListener('click', e=>{
+  const b=e.target.closest('[data-sc-paleta]'); if(!b) return;
+  const sc=b.closest('.sc'), pl=PALETAS[+b.dataset.scPaleta];
+  sc.querySelector('[data-sc-cor="p"]').value=pl.p; sc.querySelector('[data-sc-cor="d"]').value=pl.d; sc.querySelector('[data-sc-cor="t"]').value=pl.t;
+  scAtualizar(sc);
+});
+document.addEventListener('input', e=>{ if(e.target.matches && e.target.matches('[data-sc-cor]')) scAtualizar(e.target.closest('.sc')); });
 const DIAS_ABREV=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 function horaCurta(hhmm){ if(!hhmm) return ''; const [h,m]=hhmm.split(':'); const hn=String(+h); return m==='00'?hn+'h':hn+'h'+m; }
 function montarHorarioTexto(dias, abre, fecha){
@@ -1357,7 +1469,6 @@ function renderAparencia(){
   const corTexto = SALAO.cor_texto || SALAO.cor_principal || '#5E1B33';
   const horDias = SALAO.horario_dias || [2,3,4,5,6];
   const horAbre = SALAO.horario_abre || '09:00', horFecha = SALAO.horario_fecha || '19:00';
-  const paletaAtual = PALETAS.findIndex(p=>p.p.toLowerCase()===String(SALAO.cor_principal||'').toLowerCase() && p.d.toLowerCase()===String(SALAO.cor_destaque||'').toLowerCase());
   $('#conteudoAba').innerHTML = `
     <div class="grupo2"><span>Textos do site</span>
       <label class="campo2"><span>Nome do salão</span><input id="txNome" value="${escH(SALAO.nome||'')}" placeholder="Ex.: Casa Malva"></label>
@@ -1372,6 +1483,9 @@ function renderAparencia(){
         <label class="campo2"><span>Abre</span><input type="time" id="horAbre" value="${horAbre}"></label>
         <label class="campo2"><span>Fecha</span><input type="time" id="horFecha" value="${horFecha}"></label>
       </div>
+      <div style="margin-top:14px"><span style="font-size:.82rem;color:var(--suave);display:block;margin-bottom:6px">Intervalo entre horários de agendamento</span>
+        <div class="seg">${[30,60].map(v=>`<button type="button" data-hint="${v}" aria-pressed="${(SALAO.horario_intervalo||60)===v}">${v===30?'30 min':'1 hora'}</button>`).join('')}</div>
+        <p class="sub" style="margin:6px 0 0;font-size:.78rem">Vale para novas profissionais. Para as que já existem, ajuste os horários na ficha de cada uma.</p></div>
       <p class="sub" style="margin:10px 0 0;font-size:.85rem">Vai aparecer assim no site: <b id="horPreview">${escH(montarHorarioTexto(horDias,horAbre,horFecha))}</b></p>
       <button class="btn btn-vinho btn-sm" id="salvarHorario" style="margin-top:10px">Salvar horário</button>
     </div>
@@ -1381,14 +1495,9 @@ function renderAparencia(){
       <p class="erro" id="erroLogo"></p>
     </div>
     <div class="grupo2"><span>Cores do site</span>
-      <p class="sub" style="margin:0 0 10px;font-size:.85rem">Escolha uma paleta pronta ou personalize as três cores abaixo.</p>
-      <div class="paletas">${PALETAS.map((pl,i)=>`<button type="button" class="paleta" data-paleta="${i}" aria-pressed="${i===paletaAtual}"><span class="bolinhas"><span style="background:${pl.p}"></span><span style="background:${pl.d}"></span><span style="background:${pl.t}"></span></span><small>${escH(pl.n)}</small></button>`).join('')}</div>
-      <div style="display:flex;gap:16px;flex-wrap:wrap">
-        <label class="campo2"><span>Cor principal</span><input type="color" id="corPrincipal" value="${SALAO.cor_principal||'#5E1B33'}"></label>
-        <label class="campo2"><span>Cor de destaque</span><input type="color" id="corDestaque" value="${SALAO.cor_destaque||'#E7A3B6'}"></label>
-        <label class="campo2"><span>Cor da fonte (títulos)</span><input type="color" id="corTexto" value="${corTexto}"></label>
-      </div>
-      <button class="btn btn-vinho btn-sm" id="salvarCores" style="margin-top:6px">Salvar cores</button>
+      <p class="sub" style="margin:0 0 10px;font-size:.85rem">Escolha uma combinação pronta ou personalize as três cores. A cor do texto sobre os botões é ajustada sozinha para ficar legível.</p>
+      ${seletorCoresHTML('ap', {p:SALAO.cor_principal||'#5E1B33', d:SALAO.cor_destaque||'#E7A3B6', t:corTexto})}
+      <button class="btn btn-vinho btn-sm" id="salvarCores" style="margin-top:10px">Salvar cores</button>
     </div>
     <div class="grupo2"><span>Banners da home (carrossel)</span>
       ${g.length?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">${g.map((u,i)=>`<div style="position:relative"><img src="${escH(u)}" alt="" style="width:110px;height:80px;object-fit:cover;border-radius:10px;display:block"><button class="linkbtn rm" data-rmbanner="${i}" style="position:absolute;top:-6px;right:-6px;background:#fff;border-radius:50%;width:22px;height:22px;box-shadow:0 1px 4px rgba(0,0,0,.3)">✕</button></div>`).join('')}</div>`:'<p class="sub" style="margin:0 0 10px">Nenhum banner ainda — sem banners, essa faixa não aparece no site.</p>'}
@@ -1396,6 +1505,7 @@ function renderAparencia(){
       <p class="erro" id="erroBanner"></p>
     </div>`;
   document.querySelectorAll('#conteudoAba textarea.autogrow').forEach(autoGrow);
+  iniciarSeletoresCores();
 }
 document.addEventListener('input', e=>{
   if(abaAtual!=='aparencia') return;
@@ -1407,7 +1517,7 @@ document.addEventListener('input', e=>{
 document.addEventListener('change', async e=>{
   if(abaAtual!=='aparencia') return;
   if(e.target.id==='fLogo' && e.target.files[0]){
-    const r = await subirImagem(e.target.files[0], 'logo');
+    const r = await subirImagem(e.target.files[0], 'logo', 800);
     if(r.error){ $('#erroLogo').textContent=r.error; return; }
     await sb.from('saloes').update({logo_url:r.url}).eq('id',SALAO.id);
     SALAO.logo_url=r.url; renderAparencia(); toast('Logo atualizada');
@@ -1433,19 +1543,17 @@ document.addEventListener('change', async e=>{
 });
 document.addEventListener('click', async e=>{
   if(abaAtual!=='aparencia') return;
-  const pal=e.target.closest('[data-paleta]');
-  if(pal){
-    const pl=PALETAS[+pal.dataset.paleta];
-    $('#corPrincipal').value=pl.p; $('#corDestaque').value=pl.d; $('#corTexto').value=pl.t;
-    document.querySelectorAll('[data-paleta]').forEach(b=>b.setAttribute('aria-pressed', b===pal));
-    return;
-  }
   if(e.target.id==='salvarTextos'){
     const nome=$('#txNome').value.trim(), titulo=$('#txTitulo').value.trim(), descricao=$('#txDescricao').value.trim(), endereco=$('#txEndereco').value.trim();
     if(!nome){ toast('O nome do salão não pode ficar em branco.'); return; }
     const {error} = await sb.from('saloes').update({nome, titulo, descricao, endereco}).eq('id',SALAO.id);
     if(!error){ SALAO.nome=nome; SALAO.titulo=titulo; SALAO.descricao=descricao; SALAO.endereco=endereco; $('#nomeSalaoTopo').textContent=nome; toast('Textos salvos'); }
     else toast('Não foi possível salvar os textos.');
+    return;
+  }
+  if(e.target.dataset.hint){
+    SALAO.horario_intervalo = +e.target.dataset.hint;
+    document.querySelectorAll('[data-hint]').forEach(b=>b.setAttribute('aria-pressed', b===e.target));
     return;
   }
   if(e.target.dataset.hdia){
@@ -1459,13 +1567,14 @@ document.addEventListener('click', async e=>{
     const horario_dias=(SALAO.horario_dias||[2,3,4,5,6]).slice().sort((a,b)=>a-b), horario_abre=$('#horAbre').value, horario_fecha=$('#horFecha').value;
     if(!horario_dias.length){ toast('Marque pelo menos um dia de funcionamento.'); return; }
     const horario_texto=montarHorarioTexto(horario_dias,horario_abre,horario_fecha);
-    const {error} = await sb.from('saloes').update({horario_dias,horario_abre,horario_fecha,horario_texto}).eq('id',SALAO.id);
-    if(!error){ Object.assign(SALAO,{horario_dias,horario_abre,horario_fecha,horario_texto}); toast('Horário salvo'); }
+    const horario_intervalo = SALAO.horario_intervalo||60;
+    const {error} = await sb.from('saloes').update({horario_dias,horario_abre,horario_fecha,horario_texto,horario_intervalo}).eq('id',SALAO.id);
+    if(!error){ Object.assign(SALAO,{horario_dias,horario_abre,horario_fecha,horario_texto,horario_intervalo}); toast('Horário salvo'); }
     else toast('Não foi possível salvar o horário.');
     return;
   }
   if(e.target.id==='salvarCores'){
-    const cor_principal=$('#corPrincipal').value, cor_destaque=$('#corDestaque').value, cor_texto=$('#corTexto').value;
+    const cv=scValores($('.sc[data-sc="ap"]')); const cor_principal=cv.p, cor_destaque=cv.d, cor_texto=cv.t;
     const {error} = await sb.from('saloes').update({cor_principal, cor_destaque, cor_texto}).eq('id',SALAO.id);
     if(!error){ SALAO.cor_principal=cor_principal; SALAO.cor_destaque=cor_destaque; SALAO.cor_texto=cor_texto; toast('Cores salvas'); }
     else toast('Não foi possível salvar as cores.');
@@ -1478,44 +1587,109 @@ document.addEventListener('click', async e=>{
 });
 
 /* ---------------- WIZARD DE PRIMEIRO ACESSO ---------------- */
-let wizStep=0;
-const WIZ_TOTAL=5;
-const wiz={nome:'',whatsapp:'',endereco:'',cor_principal:'#5E1B33',cor_destaque:'#E7A3B6',cor_texto:'#5E1B33',profNome:'',profTelefone:'',servNome:'',servDuracao:60,servPreco:0};
-function iniciarWizard(){
-  wizStep=0;
-  wiz.nome=(SALAO.nome==='Meu salão')?'':(SALAO.nome||''); wiz.whatsapp=SALAO.whatsapp||''; wiz.endereco=SALAO.endereco||'';
-  wiz.cor_principal=SALAO.cor_principal||'#5E1B33'; wiz.cor_destaque=SALAO.cor_destaque||'#E7A3B6'; wiz.cor_texto=SALAO.cor_texto||wiz.cor_principal;
+let wizStep=0, wizOcupado=false;
+const WIZ_TOTAL=6;   // 0 salão · 1 aparência · 2 serviços · 3 horários · 4 equipe · 5 pronto
+const wiz={nome:'',whatsapp:'',endereco:'',servicos:[],horario:{dias:[2,3,4,5,6],abre:'09:00',fecha:'19:00',intervalo:60},colabs:[],cores:null,_svRemovidos:[],_coRemovidos:[]};
+const wzErroSalvar=()=>toast('Não foi possível salvar. Tente de novo.');
+
+async function iniciarWizard(){
+  $('#wizConteudo').innerHTML='<p class="sub">Carregando…</p>';
+  try{ await wzCarregarDados(); }
+  catch(err){ $('#wizConteudo').innerHTML='<p class="sub">Não foi possível carregar seus dados. Recarregue a página para tentar de novo.</p>'; return; }
   renderWizard();
 }
+async function wzCarregarDados(){
+  wiz.nome=(SALAO.nome==='Meu salão')?'':(SALAO.nome||''); wiz.whatsapp=SALAO.whatsapp||''; wiz.endereco=SALAO.endereco||'';
+  wiz.horario={dias:SALAO.horario_dias||[2,3,4,5,6], abre:SALAO.horario_abre||'09:00', fecha:SALAO.horario_fecha||'19:00', intervalo:SALAO.horario_intervalo||60};
+  wiz._svRemovidos=[]; wiz._coRemovidos=[]; wiz.cores=null;
+  const [{data:sv},{data:pr}] = await Promise.all([
+    sb.from('servicos').select('id,nome,duracao_min,preco').eq('salao_id',SALAO.id).eq('ativo',true).order('created_at'),
+    sb.from('profissionais').select('id,nome,telefone,foto_url,comissao').eq('salao_id',SALAO.id).eq('ativo',true).order('created_at')
+  ]);
+  wiz.servicos=(sv||[]).map(s=>({id:s.id,nome:s.nome,duracao:s.duracao_min,preco:s.preco}));
+  const ids=(pr||[]).map(p=>p.id);
+  let vinc=[]; if(ids.length){ const r=await sb.from('profissional_servicos').select('profissional_id,servico_id').in('profissional_id',ids); vinc=r.data||[]; }
+  wiz.colabs=(pr||[]).map(p=>({id:p.id,nome:p.nome,telefone:p.telefone||'',foto_url:p.foto_url||'',
+    servs:vinc.filter(v=>v.profissional_id===p.id).map(v=>v.servico_id),
+    comTipo:(p.comissao&&p.comissao.tipo)||'pct', comValor:(p.comissao&&p.comissao.valor!=null)?String(p.comissao.valor):''}));
+  wizStep=Math.min(Math.max(SALAO.onboarding_passo||0,0),WIZ_TOTAL-1);
+}
+
+const wzServVazio=()=>({nome:'',duracao:60,preco:''});
+const wzColabVazio=()=>({nome:'',telefone:'',foto_url:'',servs:wiz.servicos.map(s=>s.id),comTipo:'pct',comValor:''});
+const wzLogoPrevHTML=()=>SALAO.logo_url?`<img src="${escH(SALAO.logo_url)}" alt="" style="max-height:60px;max-width:200px;object-fit:contain;display:block;margin-bottom:10px">`:'';
+const wzBannerPrevHTML=()=>{ const g=SALAO.galeria||[]; return g.length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">${g.map((u,i)=>`<div style="position:relative"><img src="${escH(u)}" alt="" style="width:88px;height:64px;object-fit:cover;border-radius:10px;display:block"><button type="button" class="linkbtn rm" data-wzrmbanner="${i}" style="position:absolute;top:-6px;right:-6px;background:var(--card);border-radius:50%;width:22px;height:22px;line-height:1;padding:0">✕</button></div>`).join('')}</div>`:''; };
+function wzLinhaServico(s,i){
+  return `<div class="wz-linha" data-wzsv="${i}">
+    <input data-wzsvf="nome" value="${escH(s.nome)}" placeholder="Ex.: Corte feminino" aria-label="Nome do serviço">
+    <input data-wzsvf="duracao" type="number" min="5" step="5" value="${s.duracao}" aria-label="Duração em minutos">
+    <input data-wzsvf="preco" type="number" min="0" step="0.01" value="${s.preco===''||s.preco==null?'':s.preco}" placeholder="R$" aria-label="Preço em reais">
+    ${wiz.servicos.length>1?`<button type="button" class="linkbtn rm" data-wzsvrm="${i}" aria-label="Remover serviço">✕</button>`:'<span></span>'}
+  </div>`;
+}
+function wzCardColab(c,i){
+  return `<div class="wz-colab" data-wzco="${i}">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <div class="wz-av">${c.foto_url?`<img src="${escH(c.foto_url)}" alt="">`:'foto'}</div>
+      <label class="linkbtn" style="cursor:pointer">${c.foto_url?'Trocar foto':'Enviar foto'}<input type="file" accept="image/png,image/jpeg,image/webp" data-wzcofoto="${i}" style="display:none"></label>
+      ${wiz.colabs.length>1?`<button type="button" class="linkbtn rm" data-wzcorm="${i}" style="margin-left:auto">Remover</button>`:''}
+    </div>
+    <label class="campo2"><span>Nome</span><input data-wzcof="nome" value="${escH(c.nome)}" placeholder="Ex.: Juliana"></label>
+    <label class="campo2"><span>WhatsApp (opcional)</span><input data-wzcof="telefone" value="${escH(c.telefone)}" inputmode="tel" placeholder="(13) 99999-9999"></label>
+    <div style="margin:10px 0"><span class="wz-rot">Serviços que ela faz</span><div class="chips2">${wiz.servicos.map(s=>`<button type="button" data-wzcoserv="${i}|${s.id}" aria-pressed="${c.servs.includes(s.id)}">${escH(s.nome)}</button>`).join('')}</div></div>
+    <div><span class="wz-rot">Comissão dela (quanto ela recebe por atendimento)</span>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="seg">${['pct','fixo'].map(t=>`<button type="button" data-wzcocom="${i}|${t}" aria-pressed="${c.comTipo===t}">${t==='pct'?'%':'R$'}</button>`).join('')}</div>
+        <input data-wzcof="comValor" type="number" min="0" value="${escH(c.comValor)}" placeholder="Ex.: 40" style="width:110px;padding:9px 10px;border-radius:10px;border:1.5px solid var(--linha);background:var(--bg);font:inherit">
+      </div>
+      <p class="sub" style="font-size:.78rem;margin:6px 0 0">Se a profissional for você, coloque 0.</p>
+    </div>
+  </div>`;
+}
+
 function renderWizard(){
   $('#wizPassos').innerHTML = Array.from({length:WIZ_TOTAL},(_,i)=>`<span class="${i<=wizStep?'on':''}"></span>`).join('');
+  const cab=(t,sub)=>`<p class="sub" style="margin:0 0 4px;font-size:.8rem">Passo ${wizStep+1} de ${WIZ_TOTAL-1}</p><h2>${t}</h2>${sub?`<p class="sub" style="margin:8px 0 16px">${sub}</p>`:''}`;
   let h='';
   if(wizStep===0){
-    h=`<h2>Bem-vinda! Vamos deixar seu site pronto</h2>
-      <p class="sub">Leva menos de 2 minutos, e dá pra ajustar tudo depois.</p>
-      <label class="campo2"><span>Nome do salão</span><input id="wzNome" value="${escH(wiz.nome)}" placeholder="Ex.: Casa Malva"></label>
-      <label class="campo2"><span>WhatsApp do salão</span><input id="wzWhats" value="${escH(wiz.whatsapp)}" inputmode="tel" placeholder="5513999999999"></label>
+    h=cab('Bem-vinda! Vamos deixar seu site pronto','Leva poucos minutos, e dá pra ajustar tudo depois.')+`
+      <label class="campo2"><span>Nome do salão</span><input id="wzNome" value="${escH(wiz.nome)}" placeholder="Ex.: Espaço Bella Vitta"></label>
+      <label class="campo2"><span>WhatsApp do salão</span><input id="wzWhats" value="${escH(wiz.whatsapp)}" inputmode="tel" placeholder="(13) 99999-9999"></label>
       <label class="campo2"><span>Endereço</span><input id="wzEndereco" value="${escH(wiz.endereco)}" placeholder="Rua, número, bairro, cidade"></label>`;
   } else if(wizStep===1){
-    h=`<h2>Escolha as cores do site</h2>
-      <p class="sub">Pode trocar depois na aba Aparência, com controle total.</p>
-      <div class="paletas">${PALETAS.map((pl,i)=>`<button type="button" class="paleta" data-wzpaleta="${i}" aria-pressed="${pl.p.toLowerCase()===wiz.cor_principal.toLowerCase()}"><span class="bolinhas"><span style="background:${pl.p}"></span><span style="background:${pl.d}"></span><span style="background:${pl.t}"></span></span><small>${escH(pl.n)}</small></button>`).join('')}</div>`;
+    const cv=wiz.cores||{p:SALAO.cor_principal||'#5E1B33', d:SALAO.cor_destaque||'#E7A3B6', t:SALAO.cor_texto||SALAO.cor_principal||'#5E1B33'};
+    h=cab('Aparência do site','Escolha as cores e, se quiser, envie a logo e fotos. Tudo pode ser trocado depois na aba Aparência.')
+      + seletorCoresHTML('wz', cv)
+      + `<div class="grupo2"><span>Logo (opcional)</span><div id="wzLogoPrev">${wzLogoPrevHTML()}</div><input type="file" id="wzLogo" accept="image/png,image/jpeg,image/webp"><p class="erro" id="wzErroLogo"></p></div>
+         <div class="grupo2"><span>Fotos do salão — banners da página inicial (opcional)</span><div id="wzBannerPrev">${wzBannerPrevHTML()}</div><input type="file" id="wzBanner" accept="image/png,image/jpeg,image/webp" multiple><p class="erro" id="wzErroBanner"></p></div>`;
   } else if(wizStep===2){
-    h=`<h2>Cadastre a primeira profissional</h2>
-      <p class="sub">O resto da equipe você adiciona depois, na aba Equipe e comissões. Pode deixar em branco e pular esta parte.</p>
-      <label class="campo2"><span>Nome</span><input id="wzProfNome" value="${escH(wiz.profNome)}" placeholder="Ex.: Juliana"></label>
-      <label class="campo2"><span>WhatsApp dela (opcional)</span><input id="wzProfTel" value="${escH(wiz.profTelefone)}" inputmode="tel"></label>
-      <p class="sub" style="font-size:.85rem">Vamos deixar ela de terça a sábado, 9h às 18h. Dá pra ajustar dias e horários depois.</p>`;
+    if(!wiz.servicos.length) wiz.servicos=[wzServVazio()];
+    h=cab('Seus serviços','Cadastre o que você oferece. Pode começar com um e adicionar os outros agora ou depois.')
+      + `<div class="wz-cab"><span>Serviço</span><span>Minutos</span><span>Preço</span><span></span></div>`
+      + wiz.servicos.map(wzLinhaServico).join('')
+      + `<button type="button" class="linkbtn" id="wzSvAdd" style="margin-top:6px">+ Adicionar outro serviço</button>`;
   } else if(wizStep===3){
-    h=`<h2>Cadastre o primeiro serviço</h2>
-      <p class="sub">O restante do cardápio você adiciona depois, na aba Serviços e preços.</p>
-      <label class="campo2"><span>Nome do serviço</span><input id="wzServNome" value="${escH(wiz.servNome)}" placeholder="Ex.: Corte feminino"></label>
-      <label class="campo2"><span>Duração (min)</span><input type="number" id="wzServDur" value="${wiz.servDuracao}" min="5" step="5"></label>
-      <label class="campo2"><span>Preço (R$)</span><input type="number" id="wzServPreco" value="${wiz.servPreco}" min="0"></label>`;
+    h=cab('Horários do salão','Marque os dias e o horário de funcionamento. As profissionais começam com esses mesmos horários; você ajusta cada uma depois.')
+      + `<div class="grupo2"><span>Dias de funcionamento</span>
+          <div class="chips2">${[1,2,3,4,5,6,0].map(d=>`<button type="button" data-wzdia="${d}" aria-pressed="${wiz.horario.dias.includes(d)}">${DIAS_ABREV[d]}</button>`).join('')}</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px">
+            <label class="campo2"><span>Abre</span><input type="time" id="wzAbre" value="${wiz.horario.abre}"></label>
+            <label class="campo2"><span>Fecha</span><input type="time" id="wzFecha" value="${wiz.horario.fecha}"></label>
+          </div>
+          <div style="margin-top:12px"><span class="wz-rot">Intervalo entre horários de agendamento</span>
+            <div class="seg">${[30,60].map(v=>`<button type="button" data-wzint="${v}" aria-pressed="${wiz.horario.intervalo===v}">${v===30?'30 min':'1 hora'}</button>`).join('')}</div></div>
+          <p class="sub" style="margin:12px 0 0;font-size:.85rem">Vai aparecer assim no site: <b id="wzHorPrev">${escH(montarHorarioTexto(wiz.horario.dias,wiz.horario.abre,wiz.horario.fecha))}</b></p>
+        </div>`;
+  } else if(wizStep===4){
+    if(!wiz.colabs.length) wiz.colabs=[wzColabVazio()];
+    h=cab('Sua equipe','Cadastre quem atende no salão. Se você mesma atende, cadastre você.')
+      + wiz.colabs.map(wzCardColab).join('')
+      + `<button type="button" class="linkbtn" id="wzCoAdd">+ Adicionar outra profissional</button>
+         <p class="sub" style="font-size:.8rem;margin:10px 0 0">Dias e horários: os mesmos do salão. Você ajusta na ficha de cada uma depois.</p>`;
   } else {
     const linkSite = location.origin + '/salao.html?s=' + encodeURIComponent(SALAO.slug);
     h=`<div class="wiz-check">✓</div><h2 style="text-align:center">Tudo pronto!</h2>
-      <p class="sub" style="text-align:center">Seu site já está no ar. Compartilhe o link com suas clientes:</p>
+      <p class="sub" style="text-align:center;margin:8px 0 16px">Seu site já está no ar. Compartilhe o link com suas clientes:</p>
       <div class="exc-form" style="text-align:center;word-break:break-all">
         <b style="color:var(--vinho)">${escH(linkSite)}</b>
         <div style="margin-top:10px"><button class="btn btn-linha btn-sm" type="button" id="wzCopiarLink">Copiar link</button></div>
@@ -1528,40 +1702,211 @@ function renderWizard(){
   </div>
   ${wizStep<WIZ_TOTAL-1?'<button class="linkbtn" id="wzPular" style="display:block;margin:14px auto 0">Pular e configurar depois</button>':''}`;
   $('#wizConteudo').innerHTML=h;
+  if(wizStep===1) iniciarSeletoresCores();
 }
-document.addEventListener('click', async e=>{
-  if($('#telaOnboarding').classList.contains('oculto')) return;
-  const pal=e.target.closest('[data-wzpaleta]');
-  if(pal){ const pl=PALETAS[+pal.dataset.wzpaleta]; wiz.cor_principal=pl.p; wiz.cor_destaque=pl.d; wiz.cor_texto=pl.t; renderWizard(); return; }
-  if(e.target.id==='wzVoltar'){ wizStep--; renderWizard(); return; }
-  if(e.target.id==='wzCopiarLink'){
-    const link = location.origin + '/salao.html?s=' + encodeURIComponent(SALAO.slug);
-    try{ await navigator.clipboard.writeText(link); toast('Link copiado'); }
-    catch(err){ toast('Não foi possível copiar automaticamente. Selecione e copie manualmente.'); }
-    return;
+
+/* --- leitura dos campos da tela atual (antes de voltar, adicionar linha, etc.) --- */
+function wzColetarServicos(){
+  wiz.servicos=[...document.querySelectorAll('[data-wzsv]')].map(row=>{
+    const i=+row.dataset.wzsv, ant=wiz.servicos[i]||{};
+    return {id:ant.id, nome:row.querySelector('[data-wzsvf="nome"]').value, duracao:row.querySelector('[data-wzsvf="duracao"]').value, preco:row.querySelector('[data-wzsvf="preco"]').value};
+  });
+}
+function wzColetarColabs(){
+  document.querySelectorAll('[data-wzco]').forEach(card=>{
+    const c=wiz.colabs[+card.dataset.wzco]; if(!c) return;
+    c.nome=card.querySelector('[data-wzcof="nome"]').value; c.telefone=card.querySelector('[data-wzcof="telefone"]').value; c.comValor=card.querySelector('[data-wzcof="comValor"]').value;
+  });
+}
+function wzColetarAtual(){
+  if(wizStep===0){ wiz.nome=$('#wzNome').value.trim(); wiz.whatsapp=$('#wzWhats').value.replace(/\D/g,''); wiz.endereco=$('#wzEndereco').value.trim(); }
+  if(wizStep===1){ const sc=$('.sc[data-sc="wz"]'); if(sc) wiz.cores=scValores(sc); }
+  if(wizStep===2) wzColetarServicos();
+  if(wizStep===3){ wiz.horario.abre=$('#wzAbre').value; wiz.horario.fecha=$('#wzFecha').value; }
+  if(wizStep===4) wzColetarColabs();
+}
+
+/* --- salvar o passo atual; devolve true se pode avançar --- */
+async function wzSalvarPasso(){
+  wzColetarAtual();
+  if(wizStep===0){
+    if(!wiz.nome){ toast('Digite o nome do salão.'); return false; }
+    const {error}=await sb.from('saloes').update({nome:wiz.nome,whatsapp:wiz.whatsapp,endereco:wiz.endereco,onboarding_passo:1}).eq('id',SALAO.id);
+    if(error){ wzErroSalvar(); return false; }
+    Object.assign(SALAO,{nome:wiz.nome,whatsapp:wiz.whatsapp,endereco:wiz.endereco}); $('#nomeSalaoTopo').textContent=wiz.nome;
+    return true;
   }
-  if(e.target.id==='wzPular'){
-    await sb.from('saloes').update({onboarding_concluido:true}).eq('id',SALAO.id);
+  if(wizStep===1){
+    const cv=scValores($('.sc[data-sc="wz"]'));
+    const {error}=await sb.from('saloes').update({cor_principal:cv.p,cor_destaque:cv.d,cor_texto:cv.t,onboarding_passo:2}).eq('id',SALAO.id);
+    if(error){ wzErroSalvar(); return false; }
+    Object.assign(SALAO,{cor_principal:cv.p,cor_destaque:cv.d,cor_texto:cv.t}); wiz.cores=null;
+    return true;
+  }
+  if(wizStep===2){
+    const linhas=wiz.servicos.filter(s=>String(s.nome).trim());
+    if(!linhas.length){ toast('Cadastre pelo menos um serviço.'); return false; }
+    for(const s of linhas){
+      if(!(Number(s.duracao)>0)){ toast(`Informe a duração de "${s.nome.trim()}".`); return false; }
+      if(s.preco===''||s.preco==null||isNaN(Number(s.preco))||Number(s.preco)<0){ toast(`Informe o preço de "${s.nome.trim()}".`); return false; }
+    }
+    for(const s of linhas.filter(x=>x.id)){
+      const {error}=await sb.from('servicos').update({nome:s.nome.trim(),duracao_min:Number(s.duracao),preco:Number(s.preco)}).eq('id',s.id);
+      if(error){ wzErroSalvar(); return false; }
+    }
+    const novas=linhas.filter(x=>!x.id);
+    if(novas.length){
+      const {data,error}=await sb.from('servicos').insert(novas.map(s=>({salao_id:SALAO.id,nome:s.nome.trim(),duracao_min:Number(s.duracao),preco:Number(s.preco)}))).select('id');
+      if(error||!data||data.length!==novas.length){ wzErroSalvar(); return false; }
+      novas.forEach((s,i)=>{ s.id=data[i].id; });
+    }
+    for(const id of wiz._svRemovidos) await sb.from('servicos').update({ativo:false}).eq('id',id);
+    wiz._svRemovidos=[];
+    wiz.servicos=linhas.map(s=>({id:s.id,nome:s.nome.trim(),duracao:Number(s.duracao),preco:Number(s.preco)}));
+    const {error:e2}=await sb.from('saloes').update({onboarding_passo:3}).eq('id',SALAO.id);
+    if(e2){ wzErroSalvar(); return false; }
+    return true;
+  }
+  if(wizStep===3){
+    const hz=wiz.horario;
+    if(!hz.dias.length){ toast('Marque pelo menos um dia de funcionamento.'); return false; }
+    if(!hz.abre||!hz.fecha||!gerarHoras(hz.abre,hz.fecha,hz.intervalo).length){ toast('Confira o horário: o salão precisa abrir antes de fechar.'); return false; }
+    const dias=hz.dias.slice().sort((a,b)=>a-b), horario_texto=montarHorarioTexto(dias,hz.abre,hz.fecha);
+    const {error}=await sb.from('saloes').update({horario_dias:dias,horario_abre:hz.abre,horario_fecha:hz.fecha,horario_texto,horario_intervalo:hz.intervalo,onboarding_passo:4}).eq('id',SALAO.id);
+    if(error){ wzErroSalvar(); return false; }
+    Object.assign(SALAO,{horario_dias:dias,horario_abre:hz.abre,horario_fecha:hz.fecha,horario_texto,horario_intervalo:hz.intervalo});
+    return true;
+  }
+  if(wizStep===4){
+    const validos=wiz.colabs.filter(c=>String(c.nome).trim());
+    if(!validos.length){ toast('Cadastre pelo menos uma profissional (pode ser você).'); return false; }
+    for(const c of validos){
+      if(!c.servs.some(id=>wiz.servicos.some(s=>s.id===id))){ toast(`Marque pelo menos um serviço para ${c.nome.trim()}.`); return false; }
+      if(c.comValor===''||isNaN(Number(c.comValor))||Number(c.comValor)<0){ toast(`Informe a comissão de ${c.nome.trim()} (pode ser 0).`); return false; }
+    }
+    const dias=wiz.horario.dias.slice().sort((a,b)=>a-b), horas=gerarHoras(wiz.horario.abre,wiz.horario.fecha,wiz.horario.intervalo);
+    for(const c of validos){
+      const dados={nome:c.nome.trim(), telefone:String(c.telefone).replace(/\D/g,'')||null, foto_url:c.foto_url||null, dias, horas, comissao:{tipo:c.comTipo,valor:Number(c.comValor)}};
+      let pid=c.id;
+      if(pid){ const {error}=await sb.from('profissionais').update(dados).eq('id',pid); if(error){ wzErroSalvar(); return false; } }
+      else{
+        const {data,error}=await sb.from('profissionais').insert({salao_id:SALAO.id,...dados}).select('id').maybeSingle();
+        if(error||!data){ wzErroSalvar(); return false; }
+        pid=data.id; c.id=pid;
+      }
+      const ids=c.servs.filter(id=>wiz.servicos.some(s=>s.id===id));
+      await sb.from('profissional_servicos').delete().eq('profissional_id',pid);
+      const {error:ev}=await sb.from('profissional_servicos').insert(ids.map(sid=>({profissional_id:pid,servico_id:sid,comissao:null})));
+      if(ev){ wzErroSalvar(); return false; }
+    }
+    for(const id of wiz._coRemovidos) await sb.from('profissionais').update({ativo:false}).eq('id',id);
+    wiz._coRemovidos=[]; wiz.colabs=validos;
+    const {error:e3}=await sb.from('saloes').update({onboarding_concluido:true,onboarding_passo:5}).eq('id',SALAO.id);
+    if(e3){ wzErroSalvar(); return false; }
+    SALAO.onboarding_concluido=true;
+    return true;
+  }
+  return true;
+}
+
+/* --- eventos do wizard --- */
+const wzAtivo=()=>!$('#telaOnboarding').classList.contains('oculto');
+document.addEventListener('click', async e=>{
+  if(!wzAtivo()) return;
+  const t=e.target;
+  if(t.id==='wzVoltar'){ wzColetarAtual(); wizStep--; renderWizard(); return; }
+  if(t.id==='wzPular'){
+    const {error}=await sb.from('saloes').update({onboarding_concluido:true}).eq('id',SALAO.id);
+    if(error){ wzErroSalvar(); return; }
     SALAO.onboarding_concluido=true; mostrar('app'); selecionarAba('agenda'); return;
   }
-  if(e.target.id==='wzAvancar'){
-    if(wizStep===0){
-      wiz.nome=$('#wzNome').value.trim(); wiz.whatsapp=$('#wzWhats').value.replace(/\D/g,''); wiz.endereco=$('#wzEndereco').value.trim();
-      if(!wiz.nome){ toast('Digite o nome do salão.'); return; }
-    }
-    if(wizStep===2){ wiz.profNome=$('#wzProfNome').value.trim(); wiz.profTelefone=$('#wzProfTel').value.replace(/\D/g,''); }
-    if(wizStep===3){
-      wiz.servNome=$('#wzServNome').value.trim(); wiz.servDuracao=Number($('#wzServDur').value)||60; wiz.servPreco=Number($('#wzServPreco').value)||0;
-      const {error} = await sb.from('saloes').update({nome:wiz.nome, whatsapp:wiz.whatsapp, endereco:wiz.endereco, cor_principal:wiz.cor_principal, cor_destaque:wiz.cor_destaque, cor_texto:wiz.cor_texto, onboarding_concluido:true}).eq('id',SALAO.id);
-      if(error){ toast('Não foi possível salvar. Tente de novo.'); return; }
-      if(wiz.profNome) await sb.from('profissionais').insert({salao_id:SALAO.id, nome:wiz.profNome, telefone:wiz.profTelefone||null, dias:[2,3,4,5,6], horas:['09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00','18:00'], comissao:{tipo:'pct',valor:40}});
-      if(wiz.servNome) await sb.from('servicos').insert({salao_id:SALAO.id, nome:wiz.servNome, duracao_min:wiz.servDuracao, preco:wiz.servPreco});
-      Object.assign(SALAO,{nome:wiz.nome, whatsapp:wiz.whatsapp, endereco:wiz.endereco, cor_principal:wiz.cor_principal, cor_destaque:wiz.cor_destaque, cor_texto:wiz.cor_texto, onboarding_concluido:true});
-      $('#nomeSalaoTopo').textContent=wiz.nome;
-      wizStep++; renderWizard(); return;
-    }
+  if(t.id==='wzCopiarLink'){
+    const link=location.origin+'/salao.html?s='+encodeURIComponent(SALAO.slug);
+    try{ await navigator.clipboard.writeText(link); toast('Link copiado'); }catch(err){ toast('Não foi possível copiar automaticamente. Selecione e copie manualmente.'); }
+    return;
+  }
+  if(t.id==='wzAvancar'){
     if(wizStep===WIZ_TOTAL-1){ mostrar('app'); selecionarAba('agenda'); return; }
-    wizStep++; renderWizard();
+    if(wizOcupado) return;
+    wizOcupado=true; t.disabled=true;
+    try{ const ok=await wzSalvarPasso(); if(ok){ wizStep++; renderWizard(); } }
+    finally{ wizOcupado=false; const b=$('#wzAvancar'); if(b) b.disabled=false; }
+    return;
+  }
+  /* passo 2: serviços */
+  if(t.id==='wzSvAdd'){ wzColetarServicos(); wiz.servicos.push(wzServVazio()); renderWizard(); return; }
+  if(t.dataset && t.dataset.wzsvrm!==undefined){
+    wzColetarServicos(); const i=+t.dataset.wzsvrm, rem=wiz.servicos.splice(i,1)[0];
+    if(rem&&rem.id) wiz._svRemovidos.push(rem.id);
+    renderWizard(); return;
+  }
+  /* passo 3: horários */
+  if(t.dataset && t.dataset.wzdia!==undefined){
+    const d=+t.dataset.wzdia, ds=wiz.horario.dias;
+    wiz.horario.dias = ds.includes(d) ? ds.filter(x=>x!==d) : [...ds,d];
+    t.setAttribute('aria-pressed', wiz.horario.dias.includes(d));
+    $('#wzHorPrev').textContent=montarHorarioTexto(wiz.horario.dias,$('#wzAbre').value,$('#wzFecha').value); return;
+  }
+  if(t.dataset && t.dataset.wzint!==undefined){
+    wiz.horario.intervalo=+t.dataset.wzint; document.querySelectorAll('[data-wzint]').forEach(b=>b.setAttribute('aria-pressed', b===t)); return;
+  }
+  /* passo 4: equipe */
+  if(t.id==='wzCoAdd'){ wzColetarColabs(); wiz.colabs.push(wzColabVazio()); renderWizard(); return; }
+  if(t.dataset && t.dataset.wzcorm!==undefined){
+    wzColetarColabs(); const rem=wiz.colabs.splice(+t.dataset.wzcorm,1)[0];
+    if(rem&&rem.id) wiz._coRemovidos.push(rem.id);
+    renderWizard(); return;
+  }
+  if(t.dataset && t.dataset.wzcoserv!==undefined){
+    const [i,sid]=t.dataset.wzcoserv.split('|'), c=wiz.colabs[+i];
+    c.servs = c.servs.includes(sid) ? c.servs.filter(x=>x!==sid) : [...c.servs,sid];
+    t.setAttribute('aria-pressed', c.servs.includes(sid)); return;
+  }
+  if(t.dataset && t.dataset.wzcocom!==undefined){
+    const [i,tp]=t.dataset.wzcocom.split('|'); wiz.colabs[+i].comTipo=tp;
+    t.parentElement.querySelectorAll('[data-wzcocom]').forEach(b=>b.setAttribute('aria-pressed', b===t)); return;
+  }
+  /* passo 1: remover banner */
+  if(t.dataset && t.dataset.wzrmbanner!==undefined){
+    SALAO.galeria=(SALAO.galeria||[]).filter((_,i)=>i!==+t.dataset.wzrmbanner);
+    await sb.from('saloes').update({galeria:SALAO.galeria}).eq('id',SALAO.id);
+    $('#wzBannerPrev').innerHTML=wzBannerPrevHTML(); return;
+  }
+});
+document.addEventListener('input', e=>{
+  if(!wzAtivo()) return;
+  if(e.target.id==='wzAbre'||e.target.id==='wzFecha'){
+    wiz.horario.abre=$('#wzAbre').value; wiz.horario.fecha=$('#wzFecha').value;
+    $('#wzHorPrev').textContent=montarHorarioTexto(wiz.horario.dias,wiz.horario.abre,wiz.horario.fecha);
+  }
+});
+document.addEventListener('change', async e=>{
+  if(!wzAtivo()) return;
+  const t=e.target;
+  if(t.id==='wzLogo' && t.files[0]){
+    const r=await subirImagem(t.files[0],'logo',800);
+    if(r.error){ $('#wzErroLogo').textContent=r.error; return; }
+    $('#wzErroLogo').textContent='';
+    await sb.from('saloes').update({logo_url:r.url}).eq('id',SALAO.id);
+    SALAO.logo_url=r.url; $('#wzLogoPrev').innerHTML=wzLogoPrevHTML(); return;
+  }
+  if(t.id==='wzBanner' && t.files.length){
+    $('#wzErroBanner').textContent=''; let erro='', algum=false;
+    for(const file of t.files){
+      const r=await subirImagem(file,'banner');
+      if(r.error){ erro=r.error; continue; }
+      SALAO.galeria=[...(SALAO.galeria||[]), r.url]; algum=true;
+    }
+    if(algum){ await sb.from('saloes').update({galeria:SALAO.galeria}).eq('id',SALAO.id); $('#wzBannerPrev').innerHTML=wzBannerPrevHTML(); }
+    if(erro) $('#wzErroBanner').textContent=erro;
+    return;
+  }
+  if(t.dataset && t.dataset.wzcofoto!==undefined && t.files[0]){
+    wzColetarColabs();
+    const c=wiz.colabs[+t.dataset.wzcofoto];
+    const r=await subirImagem(t.files[0],'prof-novo-'+Math.random().toString(36).slice(2,7),800);
+    if(r.error){ toast(r.error); return; }
+    c.foto_url=r.url; renderWizard(); return;
   }
 });
 

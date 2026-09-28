@@ -42,7 +42,7 @@ img{max-width:100%;display:block}
 .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
 .oculto{display:none!important}
 
-.topo{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--vinho);color:#fff}
+.topo{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--vinho);color:var(--sobre-vinho,#fff)}
 .topo .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;min-height:60px}
 .marca{display:flex;align-items:center;gap:10px}
 .marca img{height:38px;width:auto;max-width:150px;object-fit:contain}
@@ -50,12 +50,12 @@ img{max-width:100%;display:block}
 .marca.tem-logo span{display:none}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:13px 24px;font-weight:700;text-decoration:none}
 .btn-sm{padding:9px 18px;font-size:.9rem}
-.btn-rosa{background:var(--rosa);color:var(--vinho)}
-.btn-vinho{background:var(--vinho);color:#fff}
+.btn-rosa{background:var(--rosa);color:var(--sobre-rosa,var(--vinho))}
+.btn-vinho{background:var(--vinho);color:var(--sobre-vinho,#fff)}
 .btn-linha{background:transparent;border:1.5px solid var(--linha);color:var(--fg)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 
-.hero{background:var(--vinho);color:#fff}
+.hero{background:var(--vinho);color:var(--sobre-vinho,#fff)}
 .hero .wrap{padding-block:52px 68px}
 .hero h1{font-size:clamp(2.5rem,6.5vw,4.2rem);color:var(--rosa-2);max-width:14ch}
 .hero p{max-width:42ch;color:#F6DCE4;font-size:1.05rem;margin-top:14px}
@@ -88,12 +88,12 @@ section{padding-block:56px}
 .dia{flex:0 0 64px;background:var(--card);border:1.5px solid var(--linha);border-radius:18px;padding:10px 0;text-align:center}
 .dia b{display:block;font-family:Gloock,serif;font-size:1.4rem;font-weight:400}
 .dia small{color:var(--suave);font-size:.75rem}
-.dia[aria-pressed="true"]{background:var(--vinho);color:#fff;border-color:var(--vinho)}
+.dia[aria-pressed="true"]{background:var(--vinho);color:var(--sobre-vinho,#fff);border-color:var(--vinho)}
 .dia[aria-pressed="true"] small{color:var(--rosa-2)}
 .horas{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
 .hora{background:var(--card);border:1.5px solid var(--linha);border-radius:12px;padding:10px 0;font-weight:600}
 .hora:disabled{text-decoration:line-through;opacity:.35}
-.hora[aria-pressed="true"]{background:var(--rosa);border-color:var(--vinho);color:var(--vinho)}
+.hora[aria-pressed="true"]{background:var(--rosa);border-color:var(--vinho);color:var(--sobre-rosa,var(--vinho))}
 .campo{display:block;margin-bottom:14px}
 .campo span{display:block;font-size:.88rem;font-weight:600;margin-bottom:6px}
 .campo input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--linha);background:var(--card)}
@@ -111,7 +111,7 @@ section{padding-block:56px}
 .total .dsc{color:var(--ok);font-weight:600}
 .total .tt{font-family:Gloock,serif;font-size:1.3rem;color:var(--vinho);border-top:1px solid var(--linha);margin-top:4px;padding-top:8px}
 .ok{text-align:center;padding:20px 0}
-.ok .selo{width:72px;height:72px;border-radius:50%;background:var(--vinho);color:var(--rosa-2);display:grid;place-items:center;margin:0 auto 14px;font-size:2rem}
+.ok .selo{width:72px;height:72px;border-radius:50%;background:var(--vinho);color:var(--sobre-vinho,var(--rosa-2));display:grid;place-items:center;margin:0 auto 14px;font-size:2rem}
 .fid-box{background:var(--card);border:1px solid var(--linha);border-radius:18px;padding:14px 16px;margin-bottom:12px}
 .fid-tit{font-family:Gloock,serif;font-size:1.1rem;color:var(--vinho);margin-bottom:8px}
 .selos{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
@@ -122,10 +122,10 @@ section{padding-block:56px}
 .usar-fid input{width:20px;height:20px;accent-color:var(--vinho)}
 .carregando{padding:40px 0;text-align:center;color:var(--suave)}
 
-.rodape{background:var(--vinho);color:#F6DCE4;padding-block:40px}
+.rodape{background:var(--vinho);color:var(--sobre-vinho,#F6DCE4);color:color-mix(in srgb,var(--sobre-vinho,#F6DCE4) 88%,transparent);padding-block:40px}
 .rodape .wrap{display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:center}
 .rodape p{margin:4px 0}
-.rodape a{color:#fff}
+.rodape a{color:var(--sobre-vinho,#fff)}
 .acesso{display:block;margin-top:22px;font-size:.78rem;color:rgba(246,220,228,.55);text-decoration:none;text-align:center}
 .acesso:hover{color:rgba(246,220,228,.85)}
 
@@ -160,7 +160,7 @@ section{padding-block:56px}
       <p id="hDesc"></p>
       <div class="acoes">
         <a class="btn btn-rosa" href="#agendar">Agendar agora</a>
-        <a class="btn" style="color:#fff;border:1.5px solid rgba(255,255,255,.35)" href="#servicos">Ver serviços e preços</a>
+        <a class="btn" style="color:var(--sobre-vinho,#fff);border:1.5px solid rgba(255,255,255,.35);border:1.5px solid color-mix(in srgb,var(--sobre-vinho,#fff) 40%,transparent)" href="#servicos">Ver serviços e preços</a>
       </div>
       <div class="info" id="hInfo"></div>
     </div>
@@ -241,10 +241,25 @@ async function carregarSalao(){
   render();
 }
 
+function lumHex(hex){
+  const m=/^#?([0-9a-f]{6})$/i.exec(hex||''); if(!m) return 0;
+  const n=parseInt(m[1],16);
+  const c=[(n>>16)&255,(n>>8)&255,n&255].map(v=>{ v/=255; return v<=.03928 ? v/12.92 : Math.pow((v+.055)/1.055,2.4); });
+  return .2126*c[0]+.7152*c[1]+.0722*c[2];
+}
+function contrasteHex(a,b){ const l1=lumHex(a), l2=lumHex(b); return (Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05); }
+// melhor texto sobre um fundo: tenta as opções na ordem de preferência e usa a primeira legível; senão, a de maior contraste
+function textoLegivel(fundo, opcoes){
+  for(const o of opcoes){ if(contrasteHex(o,fundo)>=4.5) return o; }
+  return opcoes.reduce((m,o)=>contrasteHex(o,fundo)>contrasteHex(m,fundo)?o:m, opcoes[0]);
+}
 function aplicarIdentidade(){
   document.title = S.nome;
-  document.documentElement.style.setProperty('--vinho', S.cor_principal||'#5E1B33');
-  document.documentElement.style.setProperty('--rosa', S.cor_destaque||'#E7A3B6');
+  const CP = S.cor_principal||'#5E1B33', CD = S.cor_destaque||'#E7A3B6';
+  document.documentElement.style.setProperty('--vinho', CP);
+  document.documentElement.style.setProperty('--rosa', CD);
+  document.documentElement.style.setProperty('--sobre-vinho', textoLegivel(CP, ['#ffffff','#1a1a1a']));
+  document.documentElement.style.setProperty('--sobre-rosa', textoLegivel(CD, [CP,'#ffffff','#1a1a1a']));
   document.documentElement.style.setProperty('--texto-titulo', S.cor_texto||S.cor_principal||'#5E1B33');
   $('#nomeTopo').textContent = S.nome;
   if(S.logo_url){ $('#logoTopo').src=S.logo_url; $('#logoTopo').classList.remove('oculto'); $('#marca').classList.add('tem-logo'); }
@@ -276,6 +291,10 @@ function renderVitrine(){
 }
 
 const serv=id=>SERVICOS.find(s=>s.id===id);
+function especialidadeDe(p){
+  const nomes = SERVICOS.filter(s=>PROF_SERV.some(ps=>ps.profissional_id===p.id && ps.servico_id===s.id)).map(s=>s.nome);
+  return nomes.length>3 ? nomes.slice(0,3).join(' · ')+' +'+(nomes.length-3) : nomes.join(' · ');
+}
 const prof=id=>id==='qq'?{id:'qq',nome:'Sem preferência',especialidade:'Primeira disponível'}:PROFISSIONAIS.find(p=>p.id===id);
 const quemFaz=servId=>PROFISSIONAIS.filter(p=>PROF_SERV.some(ps=>ps.profissional_id===p.id && ps.servico_id===servId));
 function horasDoDia(p, dataStr){
@@ -284,7 +303,10 @@ function horasDoDia(p, dataStr){
   return p.dias.includes(dow(dataStr)) ? p.horas : [];
 }
 function escolherQq(servId, dataStr, hora){
-  return quemFaz(servId).find(p=>horasDoDia(p,dataStr).includes(hora)) || quemFaz(servId)[0];
+  const dur = (serv(servId)||{}).duracao_min || 60;
+  const cand = quemFaz(servId).filter(p=>horasDoDia(p,dataStr).includes(hora));
+  const livre = cand.find(p=>{ const iv=ocupadosCache[p.id+'|'+dataStr]; return !iv || livreNoHorario(iv, hora, dur); });
+  return livre || cand[0] || quemFaz(servId)[0];
 }
 
 const novoSt=()=>({passo:0,s:null,p:null,d:null,h:null,nome:'',tel:'',cupomTxt:'',cupomOk:null,msgCupom:'',enviando:false,usarFid:false});
@@ -298,12 +320,18 @@ async function statusFidelidade(tel){
   const {data} = await sb.rpc('status_fidelidade', {p_salao_id:S.id, p_telefone:tel});
   fidCache[tel]=data; return data;
 }
+const minDe = h => { const [a,b]=String(h).slice(0,5).split(':'); return (+a)*60 + (+b); };
+// intervalos ocupados [ini,fim) em minutos; um serviço de 90 min às 10h ocupa 10:00 até 11:30
 async function horariosOcupados(profId, data){
   const k=profId+'|'+data;
   if(ocupadosCache[k]) return ocupadosCache[k];
   const {data:rows} = await sb.rpc('horarios_ocupados', {p_profissional_id:profId, p_data:data});
-  const set = new Set((rows||[]).map(r=>r.hora.slice(0,5)));
-  ocupadosCache[k]=set; return set;
+  const iv = (rows||[]).map(r=>{ const ini=minDe(r.hora); return {ini, fim: ini + (Number(r.duracao_min)||60)}; });
+  ocupadosCache[k]=iv; return iv;
+}
+function livreNoHorario(intervalos, hora, dur){
+  const ini=minDe(hora), fim=ini+dur;
+  return !intervalos.some(o=> o.ini < fim && ini < o.fim);
 }
 
 async function render(){
@@ -313,7 +341,7 @@ async function render(){
     h += SERVICOS.length ? `<div class="opcoes">${SERVICOS.map(s=>`<button class="op" data-s="${s.id}" aria-pressed="${st.s===s.id}"><strong>${esc(s.nome)}</strong><small>${s.duracao_min} min · ${fmt(s.preco)}</small></button>`).join('')}</div>` : '<p class="sub">Nenhum serviço cadastrado ainda.</p>';
   } else if(st.passo===1){
     const e = quemFaz(st.s), ops = e.length>1 ? [...e,{id:'qq',nome:'Sem preferência',especialidade:'Primeira disponível'}] : e;
-    h += ops.length ? `<div class="opcoes">${ops.map(p=>`<button class="op" data-p="${p.id}" aria-pressed="${st.p===p.id}">${p.foto_url?`<img class="op-foto" src="${esc(p.foto_url)}" alt="">`:''}<strong>${esc(p.nome)}</strong><small>${esc(p.especialidade||'')}</small></button>`).join('')}</div>` : '<p class="sub">Nenhuma profissional atende esse serviço no momento.</p>';
+    h += ops.length ? `<div class="opcoes">${ops.map(p=>`<button class="op" data-p="${p.id}" aria-pressed="${st.p===p.id}">${p.foto_url?`<img class="op-foto" src="${esc(p.foto_url)}" alt="">`:''}<strong>${esc(p.nome)}</strong><small>${esc(p.id==='qq' ? p.especialidade : especialidadeDe(p))}</small></button>`).join('')}</div>` : '<p class="sub">Nenhuma profissional atende esse serviço no momento.</p>';
   } else if(st.passo===2){
     const elegiveis = st.p==='qq' ? quemFaz(st.s) : quemFaz(st.s).filter(p=>p.id===st.p);
     const dias=[]; for(let i=0;i<40 && dias.length<10;i++){ const d=addD(i), ds=ymd(d); if(elegiveis.some(p=>horasDoDia(p,ds).length>0)) dias.push(d); }
@@ -323,10 +351,11 @@ async function render(){
       h += `<div class="dias">${dias.map(d=>`<button class="dia" data-d="${ymd(d)}" aria-pressed="${st.d===ymd(d)}"><small>${d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')}</small><b>${d.getDate()}</b><small>${d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</small></button>`).join('')}</div>`;
       const elegiveisNoDia = elegiveis.map(p=>({p, horas:horasDoDia(p,st.d)})).filter(x=>x.horas.length>0);
       const ocupSets = await Promise.all(elegiveisNoDia.map(x=>horariosOcupados(x.p.id, st.d)));
+      const durServ = (serv(st.s)||{}).duracao_min || 60;
       const horas=[...new Set(elegiveisNoDia.flatMap(x=>x.horas))].sort();
       const agora=new Date();
       h += `<div class="horas">${horas.map(x=>{
-        const livre = elegiveisNoDia.some((e,i)=>e.horas.includes(x) && !ocupSets[i].has(x));
+        const livre = elegiveisNoDia.some((e,i)=>e.horas.includes(x) && livreNoHorario(ocupSets[i], x, durServ));
         const off = !livre || (st.d===ymd(hoje) && +x.slice(0,2)<=agora.getHours());
         return `<button class="hora" data-h="${x}" ${off?'disabled':''} aria-pressed="${st.h===x}">${x}</button>`;
       }).join('')}</div>`;
@@ -409,6 +438,7 @@ $('#voltar').onclick=()=>{ st.passo--; render(); };
 $('#avancar').onclick = async ()=>{
   if(st.passo===4){
     st.enviando=true; render();
+    if(st.p==='qq') await Promise.all(quemFaz(st.s).map(x=>horariosOcupados(x.id, st.d)));
     const p = st.p==='qq' ? escolherQq(st.s,st.d,st.h)?.id : st.p;
     const {data,error} = await sb.rpc('criar_agendamento', {
       p_salao_id:S.id, p_nome:st.nome.trim(), p_telefone:st.tel.replace(/\D/g,''),
@@ -417,9 +447,10 @@ $('#avancar').onclick = async ()=>{
       p_usar_premio: !st.cupomOk && st.usarFid
     });
     st.enviando=false;
+    delete ocupadosCache[p+'|'+st.d];   // a lista de ocupados mudou (deu certo ou não): buscar de novo na próxima
     if(error || !data.ok){
       alert(data?.msg || 'Não foi possível concluir. Tente novamente.');
-      delete ocupadosCache[p+'|'+st.d]; st.h=null; st.passo=2; render(); return;
+      st.h=null; st.passo=2; render(); return;
     }
   }
   st.passo++; render();
