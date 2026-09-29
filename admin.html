@@ -358,46 +358,107 @@ function statusAssinatura(){
 function limiteClientesAtual(){
   return SALAO.plano && PLANOS[SALAO.plano] ? PLANOS[SALAO.plano].limiteClientes : PLANOS.essencial.limiteClientes;
 }
-function msgAssinar(planoKey){
-  const p=PLANOS[planoKey];
-  return `Oi! Quero assinar o plano *${p.nome}* (${fmt(p.preco)}/mês) do Amora para o salão "${SALAO.nome}".`;
-}
+function dataBR(iso){ return iso ? new Date(iso).toLocaleDateString('pt-BR') : ''; }
+function irPara(url){ location.href = url; }
 function renderBannerAssinatura(){
   const st=statusAssinatura();
   const el=$('#bannerAssinatura');
-  if(st.liberado && st.trial){
-    el.innerHTML = `<div class="wrap"><div class="banner-trial">Seu teste grátis termina em <b>${st.diasRestantes} dia${st.diasRestantes>1?'s':''}</b>. <button class="linkbtn" data-irassinatura style="color:#fff;text-decoration:underline">Ver planos</button></div></div>`;
+  const btn=(txt,attr)=>`<button class="linkbtn" ${attr} style="color:#fff;text-decoration:underline">${txt}</button>`;
+  if(SALAO.assinatura_status==='ativa' && SALAO.pagamento_pendente){
+    el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">Não conseguimos cobrar o seu cartão. Atualize o pagamento para não perder o acesso. ${btn('Atualizar pagamento','data-abrirportal')}</div></div>`;
+  } else if(st.liberado && st.trial){
+    el.innerHTML = `<div class="wrap"><div class="banner-trial">Seu teste grátis termina em <b>${st.diasRestantes} dia${st.diasRestantes>1?'s':''}</b>. ${btn('Ver planos','data-irassinatura')}</div></div>`;
   } else if(!st.liberado){
-    el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">Seu teste grátis acabou. Assine um plano para liberar o restante do painel. <button class="linkbtn" data-irassinatura style="color:#fff;text-decoration:underline">Ver planos</button></div></div>`;
+    const msg = SALAO.assinatura_status==='cancelada' ? 'Sua assinatura foi cancelada. Assine de novo para liberar o painel completo.'
+      : SALAO.assinatura_status==='vencida' ? 'Não conseguimos confirmar o pagamento e a assinatura ficou inativa. Assine de novo para liberar o painel completo.'
+      : 'Seu teste grátis acabou. Assine um plano para liberar o restante do painel.';
+    el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">${msg} ${btn('Ver planos','data-irassinatura')}</div></div>`;
   } else {
     el.innerHTML='';
   }
 }
-document.addEventListener('click', e=>{
-  if(e.target.closest('[data-irassinatura]')) document.querySelector('[data-tab="assinatura"]').click();
+/* ---- cobrança (Stripe, pela função "cobranca") ---- */
+async function chamarCobranca(corpo){
+  const {data, error} = await sb.functions.invoke('cobranca', {body:corpo});
+  if(error){
+    let msg='Não foi possível continuar. Tente de novo em instantes.';
+    try{ const j=await error.context.json(); if(j && j.mensagem) msg=j.mensagem; }catch(e){}
+    return {erro:msg};
+  }
+  if(!data || !data.url) return {erro:'Não foi possível continuar. Tente de novo em instantes.'};
+  return {url:data.url};
+}
+async function iniciarAssinatura(plano, btn){
+  const orig=btn.textContent; btn.disabled=true; btn.textContent='Abrindo pagamento…';
+  const r=await chamarCobranca({acao:'checkout', plano});
+  if(r.erro){ toast(r.erro); btn.disabled=false; btn.textContent=orig; return; }
+  irPara(r.url);
+}
+async function abrirPortal(btn){
+  const orig=btn.textContent; btn.disabled=true; btn.textContent='Abrindo…';
+  const r=await chamarCobranca({acao:'portal'});
+  if(r.erro){ toast(r.erro); btn.disabled=false; btn.textContent=orig; return; }
+  irPara(r.url);
+}
+async function aguardarAtivacao(){
+  // a Stripe avisa o sistema logo depois do pagamento; espera alguns segundos até aparecer aqui
+  if(abaAtual==='assinatura') $('#conteudoAba').innerHTML='<div class="grupo2"><span>Confirmando o seu pagamento…</span><p class="sub" style="margin:0">Isso leva só alguns segundos.</p></div>';
+  for(let i=0;i<12;i++){
+    const {data}=await sb.from('saloes').select('assinatura_status,plano,pagamento_pendente,assinatura_renova_em,stripe_subscription_id,stripe_customer_id').eq('id',SALAO.id).maybeSingle();
+    if(data){ Object.assign(SALAO,data); if(data.assinatura_status==='ativa' && data.stripe_subscription_id){ toast('Assinatura confirmada! Obrigada.'); renderBannerAssinatura(); if(abaAtual==='assinatura') renderAssinatura(); return; } }
+    await new Promise(r=>setTimeout(r,2500));
+  }
+  renderBannerAssinatura(); if(abaAtual==='assinatura') renderAssinatura();
+  toast('Ainda estamos confirmando o pagamento. Atualize a página em instantes.');
+}
+function tratarRetornoAssinatura(r){
+  if(r==='sucesso') aguardarAtivacao();
+  else if(r==='cancelada') toast('O pagamento não foi concluído. Você pode tentar de novo quando quiser.');
+}
+document.addEventListener('click', async e=>{
+  if(e.target.closest('[data-irassinatura]')){ document.querySelector('[data-tab="assinatura"]').click(); return; }
+  const a=e.target.closest('[data-assinar]'); if(a){ await iniciarAssinatura(a.dataset.assinar, a); return; }
+  const p=e.target.closest('[data-abrirportal]'); if(p){ await abrirPortal(p); return; }
 });
 function renderAssinatura(){
   const st=statusAssinatura();
-  const cartaoStatus = st.trial
-    ? `<div class="grupo2"><span>Seu teste grátis</span><p class="sub" style="margin:0">Termina em <b>${st.diasRestantes} dia${st.diasRestantes>1?'s':''}</b>. Escolha um plano abaixo quando quiser continuar.</p></div>`
-    : st.liberado
-    ? `<div class="grupo2"><span>Seu plano</span><p class="sub" style="margin:0">Você está no plano <b>${PLANOS[SALAO.plano]?.nome||SALAO.plano}</b>. Pra trocar de plano, é só falar com o suporte.</p></div>`
-    : `<div class="grupo2"><span>Teste grátis encerrado</span><p class="sub" style="margin:0">Escolha um plano para voltar a usar o painel completo.</p></div>`;
+  const assinante = SALAO.assinatura_status==='ativa' && !!SALAO.stripe_subscription_id;
+  const pl = PLANOS[SALAO.plano];
+  let cartaoStatus;
+  if(assinante){
+    cartaoStatus = `<div class="grupo2"><span>Sua assinatura</span>
+      <p class="sub" style="margin:0">Plano <b>${pl?pl.nome:escH(SALAO.plano||'')}</b>${pl?` — ${fmt(pl.preco)}/mês`:''}.${SALAO.assinatura_renova_em?` Próxima cobrança em <b>${dataBR(SALAO.assinatura_renova_em)}</b>.`:''}</p>
+      ${SALAO.pagamento_pendente?'<p class="erro" style="margin:10px 0 0">Não conseguimos cobrar o seu cartão. Atualize a forma de pagamento para não perder o acesso.</p>':''}
+      <button class="btn btn-vinho btn-sm" data-abrirportal style="margin-top:10px">${SALAO.pagamento_pendente?'Atualizar pagamento':'Gerenciar assinatura'}</button>
+      <p class="sub" style="margin:8px 0 0;font-size:.8rem">Aqui você troca o cartão, muda de plano, vê as faturas ou cancela.</p></div>`;
+  } else if(st.trial){
+    const fim=dataBR(SALAO.trial_termina_em);
+    cartaoStatus = `<div class="grupo2"><span>Seu teste grátis</span><p class="sub" style="margin:0">Termina em <b>${st.diasRestantes} dia${st.diasRestantes>1?'s':''}</b> (${fim}). ${st.diasRestantes>=3?`Se você assinar agora, a cobrança só começa quando o teste terminar.`:'A cobrança começa assim que você assinar.'}</p></div>`;
+  } else if(st.liberado){
+    cartaoStatus = `<div class="grupo2"><span>Sua conta</span><p class="sub" style="margin:0">Acesso liberado. Escolha um plano abaixo se quiser assinar.</p></div>`;
+  } else {
+    const t = SALAO.assinatura_status==='cancelada' ? 'Assinatura cancelada' : SALAO.assinatura_status==='vencida' ? 'Assinatura inativa' : 'Teste grátis encerrado';
+    cartaoStatus = `<div class="grupo2"><span>${t}</span><p class="sub" style="margin:0">Escolha um plano para voltar a usar o painel completo.</p>
+      ${SALAO.stripe_customer_id?'<button class="linkbtn" data-abrirportal style="margin-top:8px">Ver faturas e forma de pagamento</button>':''}</div>`;
+  }
+  const botao=(key,p)=> assinante
+    ? (SALAO.plano===key ? '<span class="chip concluido">Plano atual</span>' : '<button class="btn btn-linha btn-sm" style="width:100%" data-abrirportal>Trocar para este plano</button>')
+    : `<button class="btn ${p.destaque?'btn-vinho':'btn-linha'} btn-sm" style="width:100%" data-assinar="${key}">Assinar</button>`;
   $('#conteudoAba').innerHTML = `
     ${cartaoStatus}
-    <p class="sub" style="margin:18px 0 14px">Pagamento por cartão chega em breve. Por enquanto, escolha o plano e fale com o suporte pra ativar.</p>
-    <div class="planos-grid">
+    <div class="planos-grid" style="margin-top:18px">
       ${Object.entries(PLANOS).map(([key,p])=>`
-        <div class="plano-card${p.destaque?' destaque':''}${SALAO.plano===key?' atual':''}">
+        <div class="plano-card${p.destaque?' destaque':''}${assinante&&SALAO.plano===key?' atual':''}">
           ${p.destaque?'<span class="plano-selo">⭐ Mais escolhido</span>':''}
           <h3>${p.nome}</h3>
           <p class="sub" style="margin:4px 0 0;font-size:.84rem">${p.publico}</p>
           <div class="plano-preco">${fmt(p.preco)}<small>/mês</small></div>
           <p class="plano-limite">Até ${p.limiteClientes===Infinity?'<b>clientes ilimitadas</b>':`<b>${p.limiteClientes} clientes</b> cadastradas`}</p>
-          ${SALAO.plano===key?'<span class="chip concluido">Plano atual</span>':`<a class="btn ${p.destaque?'btn-vinho':'btn-linha'} btn-sm" style="width:100%;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${SUPORTE_WA.split('?')[0]}?text=${encodeURIComponent(msgAssinar(key))}">Assinar</a>`}
+          ${botao(key,p)}
         </div>`).join('')}
     </div>
-    <p class="sub" style="text-align:center;margin-top:20px">Todos os planos incluem tudo que você precisa para começar.<br>A diferença está no tamanho da sua base de clientes.</p>`;
+    <p class="sub" style="text-align:center;margin-top:20px">Todos os planos incluem tudo que você precisa para começar.<br>A diferença está no tamanho da sua base de clientes.</p>
+    ${assinante?'':'<p class="sub" style="text-align:center;margin-top:8px;font-size:.8rem">Pagamento seguro pela Stripe, só cartão de crédito. Cancele quando quiser.</p>'}`;
 }
 
 function mostrar(tela){
@@ -412,14 +473,13 @@ async function carregarSalaoDoDono(userId){
     const meta = user?.user_metadata || {};
     let nome = (meta.nome_salao||'').trim();
     try{ nome = nome || (localStorage.getItem('amora_nome_pendente')||'').trim(); }catch(e){}
-    if(!nome){
-      const primeiro = String(meta.full_name||meta.name||'').trim().split(/\s+/)[0];
-      nome = primeiro ? 'Salão de '+primeiro : 'Meu salão';
-    }
+    const provisorio = !nome;
+    if(provisorio) nome = 'Meu salão';      // a pessoa digita o nome de verdade no primeiro passo
     for(let i=0;i<3 && !data;i++){
+      const base = slugBase(nome);
+      const slug = (provisorio || i>0 || !base) ? gerarSlug(provisorio ? 'salao' : nome) : base;
       const r = await sb.from('saloes').insert({
-        owner_id:userId, nome, slug:gerarSlug(nome),
-        assinatura_status:'trial', trial_termina_em:new Date(Date.now()+7*864e5).toISOString()
+        owner_id:userId, nome, slug
       }).select().maybeSingle();
       if(!r.error && r.data){ data = r.data; }
       else {
@@ -438,7 +498,9 @@ async function carregarSalaoDoDono(userId){
   PROFISSIONAIS = profs||[];
   if(!SALAO.onboarding_concluido){ mostrar('telaOnboarding'); await iniciarWizard(); return; }
   mostrar('app');
-  selecionarAba('agenda');
+  const retorno = window.RETORNO_ASSINATURA; window.RETORNO_ASSINATURA = null;
+  selecionarAba(retorno ? 'assinatura' : 'agenda');
+  if(retorno) tratarRetornoAssinatura(retorno);
 }
 
 let abaAtual='agenda';
@@ -538,7 +600,7 @@ $('#btnEntrar').onclick = async ()=>{
   $('#btnEntrar').disabled=false; $('#btnEntrar').textContent='Entrar';
   if(error){
     const m = error.message||'';
-    $('#loginErro').textContent = m==='Invalid login credentials' ? 'E-mail ou senha incorretos.'
+    $('#loginErro').textContent = m==='Invalid login credentials' ? 'E-mail ou senha incorretos. Se você já entrou com o Google, use o botão "Continuar com Google".'
       : /not confirmed/i.test(m) ? 'Seu e-mail ainda não foi confirmado. Confira sua caixa de entrada.'
       : 'Não foi possível entrar. Tente de novo.';
     return;
@@ -573,9 +635,22 @@ $('#btnEsqueciSenha').onclick = ()=>{ $('#fEmailRecuperar').value = $('#fEmail')
 $('#btnVoltarLogin').onclick = ()=>mostrar('telaLogin');
 $('#btnIrCadastro').onclick = ()=>{ $('#cadErro').textContent=''; mostrar('telaCadastro'); };
 $('#btnCadVoltarLogin').onclick = ()=>mostrar('telaLogin');
+function slugBase(nome){
+  return String(nome).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
 function gerarSlug(nome){
-  const base = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'salao';
-  return base + '-' + Math.random().toString(36).slice(2,6);
+  return (slugBase(nome)||'salao') + '-' + Math.random().toString(36).slice(2,6);
+}
+// durante o onboarding, o link acompanha o nome de verdade do salão (antes de ser divulgado)
+async function alinharSlugComNome(nome){
+  const base=slugBase(nome); if(!base) return;
+  if(SALAO.slug===base || new RegExp('^'+base+'-[a-z0-9]{4}$').test(SALAO.slug||'')) return;   // já corresponde a esse nome
+  for(let i=0;i<3;i++){
+    const tentativa = i===0 ? base : gerarSlug(nome);
+    const {error}=await sb.from('saloes').update({slug:tentativa}).eq('id',SALAO.id);
+    if(!error){ SALAO.slug=tentativa; return; }
+    if(!/23505|duplicate/i.test((error.code||'')+' '+(error.message||''))) return;   // outro erro: mantém o link atual
+  }
 }
 $('#btnCriarConta').onclick = async ()=>{
   const nomeSalao=$('#cadNomeSalao').value.trim(), email=$('#cadEmail').value.trim(), senha=$('#cadSenha').value, senha2=$('#cadSenha2').value;
@@ -1589,7 +1664,7 @@ document.addEventListener('click', async e=>{
 /* ---------------- WIZARD DE PRIMEIRO ACESSO ---------------- */
 let wizStep=0, wizOcupado=false;
 const WIZ_TOTAL=6;   // 0 salão · 1 aparência · 2 serviços · 3 horários · 4 equipe · 5 pronto
-const wiz={nome:'',whatsapp:'',endereco:'',servicos:[],horario:{dias:[2,3,4,5,6],abre:'09:00',fecha:'19:00',intervalo:60},colabs:[],cores:null,_svRemovidos:[],_coRemovidos:[]};
+const wiz={nome:'',whatsapp:'',endereco:'',servicos:[],horario:{dias:[2,3,4,5,6],abre:'09:00',fecha:'19:00',intervalo:60},colabs:[],cores:null,primeiroNome:'',_svRemovidos:[],_coRemovidos:[]};
 const wzErroSalvar=()=>toast('Não foi possível salvar. Tente de novo.');
 
 async function iniciarWizard(){
@@ -1599,6 +1674,10 @@ async function iniciarWizard(){
   renderWizard();
 }
 async function wzCarregarDados(){
+  try{
+    const {data:{user}} = await sb.auth.getUser(); const m=(user&&user.user_metadata)||{};
+    wiz.primeiroNome = String(m.full_name||m.name||'').trim().split(/\s+/)[0]||'';
+  }catch(err){ wiz.primeiroNome=''; }
   wiz.nome=(SALAO.nome==='Meu salão')?'':(SALAO.nome||''); wiz.whatsapp=SALAO.whatsapp||''; wiz.endereco=SALAO.endereco||'';
   wiz.horario={dias:SALAO.horario_dias||[2,3,4,5,6], abre:SALAO.horario_abre||'09:00', fecha:SALAO.horario_fecha||'19:00', intervalo:SALAO.horario_intervalo||60};
   wiz._svRemovidos=[]; wiz._coRemovidos=[]; wiz.cores=null;
@@ -1652,7 +1731,7 @@ function renderWizard(){
   const cab=(t,sub)=>`<p class="sub" style="margin:0 0 4px;font-size:.8rem">Passo ${wizStep+1} de ${WIZ_TOTAL-1}</p><h2>${t}</h2>${sub?`<p class="sub" style="margin:8px 0 16px">${sub}</p>`:''}`;
   let h='';
   if(wizStep===0){
-    h=cab('Bem-vinda! Vamos deixar seu site pronto','Leva poucos minutos, e dá pra ajustar tudo depois.')+`
+    h=cab((wiz.primeiroNome?`Olá, ${escH(wiz.primeiroNome)}! `:'')+'Vamos deixar seu site pronto','Leva poucos minutos, e dá pra ajustar tudo depois. Comece dizendo o nome do seu salão.')+`
       <label class="campo2"><span>Nome do salão</span><input id="wzNome" value="${escH(wiz.nome)}" placeholder="Ex.: Espaço Bella Vitta"></label>
       <label class="campo2"><span>WhatsApp do salão</span><input id="wzWhats" value="${escH(wiz.whatsapp)}" inputmode="tel" placeholder="(13) 99999-9999"></label>
       <label class="campo2"><span>Endereço</span><input id="wzEndereco" value="${escH(wiz.endereco)}" placeholder="Rua, número, bairro, cidade"></label>`;
@@ -1734,6 +1813,7 @@ async function wzSalvarPasso(){
     const {error}=await sb.from('saloes').update({nome:wiz.nome,whatsapp:wiz.whatsapp,endereco:wiz.endereco,onboarding_passo:1}).eq('id',SALAO.id);
     if(error){ wzErroSalvar(); return false; }
     Object.assign(SALAO,{nome:wiz.nome,whatsapp:wiz.whatsapp,endereco:wiz.endereco}); $('#nomeSalaoTopo').textContent=wiz.nome;
+    if(!SALAO.onboarding_concluido) await alinharSlugComNome(wiz.nome);
     return true;
   }
   if(wizStep===1){
@@ -1911,9 +1991,17 @@ document.addEventListener('change', async e=>{
 });
 
 (async function iniciar(){
+  const hp=new URLSearchParams(location.hash.replace(/^#/,'')), qp=new URLSearchParams(location.search);
+  if(hp.get('error_description')||qp.get('error_description')){
+    const cancelou=(hp.get('error')||qp.get('error'))==='access_denied';
+    history.replaceState(null,'',location.pathname);
+    toast(cancelou ? 'Você cancelou o login com o Google.' : 'Não foi possível entrar com o Google. Tente de novo.');
+  }
+  if(qp.get('assinatura')){ window.RETORNO_ASSINATURA = qp.get('assinatura'); history.replaceState(null,'',location.pathname+location.hash); }
   if(location.hash.includes('type=recovery')){ mostrar('telaNovaSenha'); return; }
   if(location.hash==='#criar-conta'){ const {data:{session}} = await sb.auth.getSession(); if(!session){ mostrar('telaCadastro'); return; } }
   const {data:{session}} = await sb.auth.getSession();
+  if(/access_token=/.test(location.hash)) history.replaceState(null,'',location.pathname+location.search);   // some a chave de acesso da barra de endereço
   if(session){ await carregarSalaoDoDono(session.user.id); }
   else { mostrar('telaLogin'); }
 })();
