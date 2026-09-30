@@ -648,7 +648,7 @@ async function alinharSlugComNome(nome){
   for(let i=0;i<3;i++){
     const tentativa = i===0 ? base : gerarSlug(nome);
     const {error}=await sb.from('saloes').update({slug:tentativa}).eq('id',SALAO.id);
-    if(!error){ SALAO.slug=tentativa; return; }
+    if(!error){ SALAO.slug=tentativa; const l=$('#linkVerSite'); if(l) l.href='salao.html?s='+encodeURIComponent(tentativa); return; }
     if(!/23505|duplicate/i.test((error.code||'')+' '+(error.message||''))) return;   // outro erro: mantém o link atual
   }
 }
