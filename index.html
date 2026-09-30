@@ -2,6 +2,15 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<script>
+/* se o login (Google, e-mail de confirmação) voltar para esta página em vez do painel, repassa na hora.
+   o Google/Supabase podem devolver o login de duas formas: no fragmento (#access_token=...) ou
+   no parâmetro da URL (?code=...) — checamos os dois, senão a pessoa fica "presa" aqui sem aviso. */
+if(/access_token=|error_description=|type=recovery/.test(location.hash) || /(^|[?&])(code|error|error_description)=/.test(location.search)){
+  document.documentElement.innerHTML = '<body style="margin:0"><div style="position:fixed;inset:0;background:#FCFAFD;display:flex;align-items:center;justify-content:center;font:1rem Figtree,system-ui,sans-serif;color:#241536">Entrando…</div></body>';
+  location.replace('admin.html'+location.search+location.hash);
+}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Amora — O sistema completo para o seu salão</title>
 <meta name="description" content="Agendamento online, mini CRM, fidelidade e comissões automáticas. Tudo em um só lugar, com site personalizado pro seu salão. 7 dias grátis.">
