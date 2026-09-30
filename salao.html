@@ -44,7 +44,7 @@ img{max-width:100%;display:block}
 
 .topo{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--vinho);color:var(--sobre-vinho,#fff)}
 .topo .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;min-height:60px}
-.marca{display:flex;align-items:center;gap:10px}
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
 .marca img{height:38px;width:auto;max-width:150px;object-fit:contain}
 .marca span{font-family:Sora,sans-serif;font-weight:700;font-size:1.25rem}
 .marca.tem-logo span{display:none}
@@ -57,9 +57,9 @@ img{max-width:100%;display:block}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 
 .hero{position:relative;overflow:hidden;background:var(--vinho);color:var(--sobre-vinho,#fff)}
-.hero::before{content:'';position:absolute;top:-30%;right:-15%;width:65%;padding-bottom:65%;border-radius:50%;background:radial-gradient(circle,var(--rosa) 0%,transparent 70%);opacity:.4;filter:blur(6px)}
-.hero::after{content:'';position:absolute;bottom:-40%;left:-10%;width:55%;padding-bottom:55%;border-radius:50%;background:radial-gradient(circle,var(--rosa) 0%,transparent 70%);opacity:.25;filter:blur(6px)}
-.hero .wrap{position:relative}
+.hero::before{content:'';position:absolute;top:-30%;right:-15%;width:65%;padding-bottom:65%;border-radius:50%;background:radial-gradient(circle,var(--rosa) 0%,transparent 70%);opacity:.4;filter:blur(6px);pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-40%;left:-10%;width:55%;padding-bottom:55%;border-radius:50%;background:radial-gradient(circle,var(--rosa) 0%,transparent 70%);opacity:.25;filter:blur(6px);pointer-events:none}
+.hero .wrap{position:relative;z-index:1}
 .hero .wrap{padding-block:52px 68px}
 .hero h1{font-size:clamp(2.5rem,6.5vw,4.2rem);color:var(--rosa-2);max-width:14ch}
 .hero p{max-width:42ch;color:#F6DCE4;font-size:1.05rem;margin-top:14px}
@@ -150,7 +150,7 @@ section{padding-block:56px}
 <body>
 <div class="topo">
   <div class="wrap">
-    <div class="marca" id="marca"><img id="logoTopo" alt="" class="oculto"><span id="nomeTopo"></span></div>
+    <a class="marca" id="marca" href="#"><img id="logoTopo" alt="" class="oculto"><span id="nomeTopo"></span></a>
     <a class="btn btn-rosa btn-sm" href="#agendar">Agendar</a>
   </div>
 </div>
