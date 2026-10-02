@@ -229,7 +229,7 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
     <p class="erro" id="loginErro"></p>
     <button class="btn btn-vinho" id="btnEntrar">Entrar</button>
     <button class="linkbtn" id="btnEsqueciSenha" style="display:block;margin:14px auto 0">Esqueci minha senha</button>
-    <p class="sub" style="margin:16px 0 0">Ainda não tem conta? <button class="linkbtn" id="btnIrCadastro" style="font-weight:700">Criar grátis por 7 dias</button></p>
+    <p class="sub" style="margin:16px 0 0">Ainda não tem conta? <button class="linkbtn" id="btnIrCadastro" style="font-weight:700">Criar conta grátis</button></p>
     <a href="index.html" class="troca">← Voltar ao site</a>
     <a href="#" target="_blank" rel="noopener" class="troca suporte-link" style="margin-top:6px">💬 Falar com o suporte</a>
   </div>
@@ -238,7 +238,7 @@ input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
 <div id="telaCadastro" class="lock oculto">
   <div class="cartao">
     <div class="amora-marca">Amora</div><h1>Criar minha conta</h1>
-    <p class="sub">7 dias grátis, sem cartão. Em poucos minutos seu site já está no ar.</p>
+    <p class="sub">Grátis até 50 clientes, sem cartão e sem prazo pra acabar. Em poucos minutos seu site já está no ar.</p>
     <label class="campo"><span>Nome do salão</span><input id="cadNomeSalao" placeholder="Ex.: Espaço Bella Vitta"></label>
     <button class="btn btn-google" id="btnGoogleCadastro" type="button"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Cadastrar com Google</button>
     <div class="divisor"><span>ou crie com e-mail</span></div>
@@ -333,7 +333,7 @@ function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');setT
 const SUPORTE_WA = 'https://wa.me/5513997748468?text=' + encodeURIComponent('Oi! Preciso de ajuda com o Mango Beauty.');
 document.querySelectorAll('.suporte-link').forEach(a=>a.href=SUPORTE_WA);
 
-let SALAO=null, PROFISSIONAIS=[];
+let SALAO=null, PROFISSIONAIS=[], TOTAL_CLIENTES=0;
 const STATUS_TXT={confirmado:'Confirmado', concluido:'Concluído', falta:'Faltou'};
 const PROX_STATUS={confirmado:'concluido', concluido:'falta', falta:'confirmado'};
 const fmt=v=>{v=Number(v||0);return 'R$ '+v.toLocaleString('pt-BR',Number.isInteger(v)?{}:{minimumFractionDigits:2,maximumFractionDigits:2})};
@@ -348,37 +348,42 @@ const TABS={
   clientes:'Clientes', fidelidade:'Fidelidade e cupons', aparencia:'Aparência', assinatura:'Assinatura'
 };
 const PLANOS={
-  essencial:{nome:'Essencial', preco:29.90, limiteClientes:50, publico:'Para profissionais autônomas e salões pequenos', destaque:false},
-  profissional:{nome:'Profissional', preco:49.90, limiteClientes:200, publico:'Para salões em crescimento', destaque:true},
-  avancado:{nome:'Avançado', preco:99.90, limiteClientes:Infinity, publico:'Para salões com uma base maior de clientes', destaque:false}
+  essencial:{nome:'Grátis', preco:0, limiteClientes:50, limiteProfissionais:2, publico:'Para quem está começando', destaque:false},
+  profissional:{nome:'Profissional', preco:49.90, limiteClientes:200, limiteProfissionais:Infinity, publico:'Para salões em crescimento', destaque:true},
+  avancado:{nome:'Avançado', preco:99.90, limiteClientes:Infinity, limiteProfissionais:Infinity, publico:'Para salões com uma base maior de clientes', destaque:false}
 };
-function statusAssinatura(){
-  if(SALAO.assinatura_status==='ativa') return {liberado:true, plano:SALAO.plano};
-  const fim = SALAO.trial_termina_em ? new Date(SALAO.trial_termina_em) : null;
-  if(fim && fim>new Date()) return {liberado:true, trial:true, diasRestantes:Math.max(1,Math.ceil((fim-new Date())/864e5))};
-  return {liberado:false};
+// o plano de verdade só vale enquanto a assinatura está ativa; senão (vencida/cancelada/nunca assinou) conta como grátis
+function efetivoPlano(){
+  return (SALAO.assinatura_status==='ativa' && SALAO.plano && PLANOS[SALAO.plano]) ? SALAO.plano : 'essencial';
 }
-function limiteClientesAtual(){
-  return SALAO.plano && PLANOS[SALAO.plano] ? PLANOS[SALAO.plano].limiteClientes : PLANOS.essencial.limiteClientes;
-}
+function limiteClientesAtual(){ return PLANOS[efetivoPlano()].limiteClientes; }
+function limiteProfissionaisAtual(){ return PLANOS[efetivoPlano()].limiteProfissionais; }
+function temRelatoriosAvancados(){ return efetivoPlano()!=='essencial'; }
 function dataBR(iso){ return iso ? new Date(iso).toLocaleDateString('pt-BR') : ''; }
 function irPara(url){ location.href = url; }
 function renderBannerAssinatura(){
-  const st=statusAssinatura();
   const el=$('#bannerAssinatura');
   const btn=(txt,attr)=>`<button class="linkbtn" ${attr} style="color:#fff;text-decoration:underline">${txt}</button>`;
   if(SALAO.assinatura_status==='ativa' && SALAO.pagamento_pendente){
-    el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">Não conseguimos cobrar o seu cartão. Atualize o pagamento para não perder o acesso. ${btn('Atualizar pagamento','data-abrirportal')}</div></div>`;
-  } else if(st.liberado && st.trial){
-    el.innerHTML = `<div class="wrap"><div class="banner-trial">Seu teste grátis termina em <b>${st.diasRestantes} dia${st.diasRestantes>1?'s':''}</b>. ${btn('Ver planos','data-irassinatura')}</div></div>`;
-  } else if(!st.liberado){
-    const msg = SALAO.assinatura_status==='cancelada' ? 'Sua assinatura foi cancelada. Assine de novo para liberar o painel completo.'
-      : SALAO.assinatura_status==='vencida' ? 'Não conseguimos confirmar o pagamento e a assinatura ficou inativa. Assine de novo para liberar o painel completo.'
-      : 'Seu teste grátis acabou. Assine um plano para liberar o restante do painel.';
-    el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">${msg} ${btn('Ver planos','data-irassinatura')}</div></div>`;
-  } else {
-    el.innerHTML='';
+    el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">Não conseguimos cobrar o seu cartão. Atualize o pagamento pra não perder os recursos do seu plano. ${btn('Atualizar pagamento','data-abrirportal')}</div></div>`;
+    return;
   }
+  if(efetivoPlano()==='essencial'){
+    const limC=PLANOS.essencial.limiteClientes, limP=PLANOS.essencial.limiteProfissionais;
+    if(TOTAL_CLIENTES>=limC){
+      el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">Você chegou ao limite de ${limC} clientes do plano grátis. Assine um plano pra continuar cadastrando clientes novas. ${btn('Ver planos','data-irassinatura')}</div></div>`;
+      return;
+    }
+    if(PROFISSIONAIS.length>=limP){
+      el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">Você chegou ao limite de ${limP} profissionais do plano grátis. ${btn('Ver planos','data-irassinatura')}</div></div>`;
+      return;
+    }
+    if(TOTAL_CLIENTES>=Math.ceil(limC*0.8)){
+      el.innerHTML = `<div class="wrap"><div class="banner-trial">Você já tem ${TOTAL_CLIENTES} de ${limC} clientes no plano grátis. ${btn('Ver planos','data-irassinatura')}</div></div>`;
+      return;
+    }
+  }
+  el.innerHTML='';
 }
 /* ---- cobrança (Stripe, pela função "cobranca") ---- */
 async function chamarCobranca(corpo){
@@ -424,52 +429,52 @@ document.addEventListener('click', async e=>{
   const p=e.target.closest('[data-abrirportal]'); if(p){ await abrirPortal(p); return; }
 });
 function renderAssinatura(){
-  const st=statusAssinatura();
-  const assinante = SALAO.assinatura_status==='ativa' && !!SALAO.stripe_subscription_id;
-  const pl = PLANOS[SALAO.plano];
+  const plano = efetivoPlano();
+  const assinante = plano!=='essencial';
+  const pl = PLANOS[plano];
   let cartaoStatus;
   if(assinante){
     cartaoStatus = `<div class="grupo2"><span>Sua assinatura</span>
-      <p class="sub" style="margin:0">Plano <b>${pl?pl.nome:escH(SALAO.plano||'')}</b>${pl?` — ${fmt(pl.preco)}/mês`:''}.${SALAO.assinatura_renova_em?` Próxima cobrança em <b>${dataBR(SALAO.assinatura_renova_em)}</b>.`:''}</p>
-      ${SALAO.pagamento_pendente?'<p class="erro" style="margin:10px 0 0">Não conseguimos cobrar o seu cartão. Atualize a forma de pagamento para não perder o acesso.</p>':''}
+      <p class="sub" style="margin:0">Plano <b>${pl.nome}</b> — ${fmt(pl.preco)}/mês.${SALAO.assinatura_renova_em?` Próxima cobrança em <b>${dataBR(SALAO.assinatura_renova_em)}</b>.`:''}</p>
+      ${SALAO.pagamento_pendente?'<p class="erro" style="margin:10px 0 0">Não conseguimos cobrar o seu cartão. Atualize a forma de pagamento pra não perder os recursos do seu plano.</p>':''}
       <button class="btn btn-vinho btn-sm" data-abrirportal style="margin-top:10px">${SALAO.pagamento_pendente?'Atualizar pagamento':'Gerenciar assinatura'}</button>
       <p class="sub" style="margin:8px 0 0;font-size:.8rem">Aqui você troca o cartão, muda de plano, vê as faturas ou cancela.</p></div>`;
-  } else if(st.trial){
-    const fim=dataBR(SALAO.trial_termina_em);
-    cartaoStatus = `<div class="grupo2"><span>Seu teste grátis</span><p class="sub" style="margin:0">Termina em <b>${st.diasRestantes} dia${st.diasRestantes>1?'s':''}</b> (${fim}). ${st.diasRestantes>=3?`Se você assinar agora, a cobrança só começa quando o teste terminar.`:'A cobrança começa assim que você assinar.'}</p></div>`;
-  } else if(st.liberado){
-    cartaoStatus = `<div class="grupo2"><span>Sua conta</span><p class="sub" style="margin:0">Acesso liberado. Escolha um plano abaixo se quiser assinar.</p></div>`;
   } else {
-    const t = SALAO.assinatura_status==='cancelada' ? 'Assinatura cancelada' : SALAO.assinatura_status==='vencida' ? 'Assinatura inativa' : 'Teste grátis encerrado';
-    cartaoStatus = `<div class="grupo2"><span>${t}</span><p class="sub" style="margin:0">Escolha um plano para voltar a usar o painel completo.</p>
-      ${SALAO.stripe_customer_id?'<button class="linkbtn" data-abrirportal style="margin-top:8px">Ver faturas e forma de pagamento</button>':''}</div>`;
+    cartaoStatus = `<div class="grupo2"><span>Seu plano</span>
+      <p class="sub" style="margin:0">Você está no plano <b>Grátis</b>, sem prazo pra acabar: <b>${TOTAL_CLIENTES} de ${PLANOS.essencial.limiteClientes}</b> clientes · <b>${PROFISSIONAIS.length} de ${PLANOS.essencial.limiteProfissionais}</b> profissionais.</p>
+      <p class="sub" style="margin:6px 0 0">Continue usando sem custo até esses limites. Quando o salão crescer, é só assinar um plano abaixo.</p>
+      ${SALAO.stripe_customer_id?'<button class="linkbtn" data-abrirportal style="margin-top:8px">Ver faturas antigas</button>':''}</div>`;
   }
-  const botao=(key,p)=> assinante
-    ? (SALAO.plano===key ? '<span class="chip concluido">Plano atual</span>' : '<button class="btn btn-linha btn-sm" style="width:100%" data-abrirportal>Trocar para este plano</button>')
-    : `<button class="btn ${p.destaque?'btn-vinho':'btn-linha'} btn-sm" style="width:100%" data-assinar="${key}">Assinar</button>`;
+  const botao=(key,p)=>{
+    if(plano===key) return '<span class="chip concluido">Plano atual</span>';
+    if(key==='essencial') return '';
+    return assinante
+      ? `<button class="btn btn-linha btn-sm" style="width:100%" data-abrirportal>Trocar para este plano</button>`
+      : `<button class="btn ${p.destaque?'btn-vinho':'btn-linha'} btn-sm" style="width:100%" data-assinar="${key}">Assinar</button>`;
+  };
   $('#conteudoAba').innerHTML = `
     ${cartaoStatus}
     <div class="planos-grid" style="margin-top:18px">
       ${Object.entries(PLANOS).map(([key,p])=>`
-        <div class="plano-card${p.destaque?' destaque':''}${assinante&&SALAO.plano===key?' atual':''}">
+        <div class="plano-card${p.destaque?' destaque':''}${plano===key?' atual':''}">
           ${p.destaque?'<span class="plano-selo">⭐ Mais escolhido</span>':''}
           <h3>${p.nome}</h3>
           <p class="sub" style="margin:4px 0 0;font-size:.84rem">${p.publico}</p>
-          <div class="plano-preco">${fmt(p.preco)}<small>/mês</small></div>
-          <p class="plano-limite">Até ${p.limiteClientes===Infinity?'<b>clientes ilimitadas</b>':`<b>${p.limiteClientes} clientes</b> cadastradas`}</p>
+          <div class="plano-preco">${p.preco===0?'Grátis':fmt(p.preco)}${p.preco===0?'':'<small>/mês</small>'}</div>
+          <p class="plano-limite">Até ${p.limiteClientes===Infinity?'<b>clientes ilimitadas</b>':`<b>${p.limiteClientes} clientes</b>`} · ${p.limiteProfissionais===Infinity?'<b>profissionais ilimitadas</b>':`até <b>${p.limiteProfissionais} profissionais</b>`}</p>
           <ul class="plano-lista">
             <li>Agendamento online 24h</li>
             <li>Mini CRM (fiéis, novas e sumidas)</li>
             <li>Fidelidade e cupons automáticos</li>
             <li>Comissões calculadas sozinhas</li>
-            <li>Desempenho e projeção de faturamento</li>
+            <li>Desempenho do dia e do mês</li>
             <li>Site com a cara do seu salão</li>
+            ${key!=='essencial'?'<li><b>Projeção e tendência de faturamento</b></li>':''}
           </ul>
           ${botao(key,p)}
         </div>`).join('')}
     </div>
-    <p class="sub" style="text-align:center;margin-top:20px">Todos os planos incluem tudo que você precisa para começar.<br>A diferença está no tamanho da sua base de clientes.</p>
-    ${assinante?'':'<p class="sub" style="text-align:center;margin-top:8px;font-size:.8rem">Pagamento seguro pela Stripe, só cartão de crédito. Cancele quando quiser.</p>'}`;
+    <p class="sub" style="text-align:center;margin-top:20px">O plano Grátis não tem prazo pra acabar — use enquanto fizer sentido pro seu salão.<br>Pagamento seguro pela Stripe, só cartão de crédito. Cancele quando quiser.</p>`;
 }
 
 function mostrar(tela){
@@ -507,6 +512,8 @@ async function carregarSalaoDoDono(userId){
   $('#linkVerSite').href = 'salao.html?s=' + encodeURIComponent(SALAO.slug);
   const {data:profs} = await sb.from('profissionais').select('id,nome').eq('salao_id', SALAO.id).eq('ativo', true).order('nome');
   PROFISSIONAIS = profs||[];
+  const {count:totalCli} = await sb.from('clientes').select('id',{count:'exact',head:true}).eq('salao_id', SALAO.id);
+  TOTAL_CLIENTES = totalCli||0;
   if(!SALAO.onboarding_concluido){ mostrar('telaOnboarding'); await iniciarWizard(); return; }
   mostrar('app');
   const retorno = window.RETORNO_ASSINATURA; window.RETORNO_ASSINATURA = null;
@@ -516,8 +523,6 @@ async function carregarSalaoDoDono(userId){
 
 let abaAtual='agenda';
 function selecionarAba(tab){
-  const st = statusAssinatura();
-  if(!st.liberado && tab!=='agenda' && tab!=='assinatura'){ tab='assinatura'; }
   abaAtual=tab;
   document.querySelectorAll('#abas button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.tab===tab));
   $('#tituloAba').textContent = TABS[tab];
@@ -734,6 +739,8 @@ async function carregarClientes(){
     sb.from('agendamentos').select('data,cliente_id,status').eq('salao_id', SALAO.id).eq('status','concluido').gte('data', umAnoAtras)
   ]);
   CLIENTES = cli||[]; CUPONS = cup||[]; AG_ANO = ag||[];
+  TOTAL_CLIENTES = CLIENTES.length;
+  renderBannerAssinatura();
 }
 function msgCupomPara(c, cliente){
   const pn=cliente.nome.split(' ')[0];
@@ -1193,8 +1200,10 @@ document.addEventListener('click', async e=>{
     }
   }
   if(e.target.id==='eqAdd'){
+    const limiteP=limiteProfissionaisAtual();
+    if(PROFISSIONAIS.length>=limiteP){ toast(`Seu plano permite até ${limiteP} profissionais. Assine um plano maior na aba Assinatura pra cadastrar mais.`); return; }
     const {data:nova} = await sb.from('profissionais').insert({salao_id:SALAO.id, nome:'Nova profissional', dias:SALAO.horario_dias||[2,3,4,5,6], horas:horasSalao(), comissao:{tipo:'pct',valor:40}}).select('id').maybeSingle();
-    await carregarEquipe(); if(nova) profissionalAberta=nova.id; renderEquipe(); return;
+    await carregarEquipe(); if(nova) profissionalAberta=nova.id; renderEquipe(); renderBannerAssinatura(); return;
   }
   if(e.target.dataset.combaixaabrir){ comBaixaAberta=e.target.dataset.combaixaabrir; renderEquipe(); return; }
   if(e.target.id==='comBaixaCancelar'){ comBaixaAberta=null; renderEquipe(); return; }
@@ -1324,6 +1333,7 @@ function renderDashboard(){
       <div class="kpi"><b>${AG_DASH.length?Math.round(faltas.length/AG_DASH.length*100):0}%</b><span>faltas no mês</span></div>
       <div class="kpi destaque"><b>${window._sumidas}</b><span>clientes sem voltar há 60+ dias</span></div>
     </div>
+    ${temRelatoriosAvancados() ? `
     <div class="grupo2"><span>Projeção de faturamento (agendamentos já confirmados)</span>
       <div class="kpis"><div class="kpi"><b>${fmt(proj7)}</b><span>próximos 7 dias</span></div><div class="kpi"><b>${fmt(proj30)}</b><span>próximos 60 dias</span></div></div>
     </div>
@@ -1332,7 +1342,10 @@ function renderDashboard(){
         const cor = i===0 ? '' : (porMes[m]>=porMes[meses[i-1]] ? 'verde' : 'vermelho');
         return `<div class="mini-col"><b>${fmt(porMes[m]).replace('R$ ','')}</b><div class="mini-barra ${cor}" style="height:${Math.max(4,porMes[m]/trendMax*80)}px"></div><small>${mesLabel(m+'-01')}</small></div>`;
       }).join('')}</div>
-    </div>
+    </div>` : `
+    <div class="grupo2"><span>Projeção e tendência de faturamento</span>
+      <p class="sub" style="margin:0">Veja o faturamento projetado dos próximos dias e a tendência dos últimos 6 meses. <button class="linkbtn" data-irassinatura>Disponível a partir do plano Profissional</button></p>
+    </div>`}
     <h3 style="margin:22px 0 10px">Faturamento por profissional no mês</h3>
     ${PROF_MES.length ? PROF_MES.map(p=>`<div class="hb"><span>${escH(p.nome)}</span><div><i style="width:${p.fat/mx*100}%"></i></div><b>${p.n} · ${fmt(p.fat)}</b></div>`).join('') : '<p class="vazio">Nenhum atendimento concluído neste mês ainda.</p>'}
     ${window._sumidas ? `<p class="sub" style="margin-top:16px">${window._sumidas} cliente${window._sumidas>1?'s':''} sem voltar há 60+ dias. <button class="linkbtn" id="irClientesSumidas">Ver na aba Clientes</button></p>` : ''}`;
@@ -1945,7 +1958,11 @@ document.addEventListener('click', async e=>{
     wiz.horario.intervalo=+t.dataset.wzint; document.querySelectorAll('[data-wzint]').forEach(b=>b.setAttribute('aria-pressed', b===t)); return;
   }
   /* passo 4: equipe */
-  if(t.id==='wzCoAdd'){ wzColetarColabs(); wiz.colabs.push(wzColabVazio()); renderWizard(); return; }
+  if(t.id==='wzCoAdd'){
+    const limiteP=limiteProfissionaisAtual();
+    if(wiz.colabs.length>=limiteP){ toast(`O plano grátis permite até ${limiteP} profissionais. Dá pra assinar um plano maior depois, na aba Assinatura.`); return; }
+    wzColetarColabs(); wiz.colabs.push(wzColabVazio()); renderWizard(); return;
+  }
   if(t.dataset && t.dataset.wzcorm!==undefined){
     wzColetarColabs(); const rem=wiz.colabs.splice(+t.dataset.wzcorm,1)[0];
     if(rem&&rem.id) wiz._coRemovidos.push(rem.id);
