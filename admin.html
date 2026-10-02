@@ -177,8 +177,9 @@ button{cursor:pointer}
 .plano-lista{list-style:none;padding:0;margin:0 0 18px;text-align:left;font-size:.86rem;color:var(--suave)}
 .plano-limite{color:var(--suave);font-size:.9rem;margin:0 0 20px}
 .plano-limite b{color:var(--tinta)}
-.plano-lista li{padding:5px 0;border-top:1px solid var(--linha)}
+.plano-lista li{padding:5px 0;border-top:1px solid var(--linha);display:flex;gap:8px;align-items:flex-start}
 .plano-lista li:first-child{border-top:0}
+.plano-lista li::before{content:'✓';color:var(--ok);font-weight:700}
 .com-linha{border-top:1px solid var(--linha);padding:14px 0}
 .com-linha:first-of-type{border-top:0}
 .com-topo{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
@@ -456,6 +457,14 @@ function renderAssinatura(){
           <p class="sub" style="margin:4px 0 0;font-size:.84rem">${p.publico}</p>
           <div class="plano-preco">${fmt(p.preco)}<small>/mês</small></div>
           <p class="plano-limite">Até ${p.limiteClientes===Infinity?'<b>clientes ilimitadas</b>':`<b>${p.limiteClientes} clientes</b> cadastradas`}</p>
+          <ul class="plano-lista">
+            <li>Agendamento online 24h</li>
+            <li>Mini CRM (fiéis, novas e sumidas)</li>
+            <li>Fidelidade e cupons automáticos</li>
+            <li>Comissões calculadas sozinhas</li>
+            <li>Desempenho e projeção de faturamento</li>
+            <li>Site com a cara do seu salão</li>
+          </ul>
           ${botao(key,p)}
         </div>`).join('')}
     </div>
