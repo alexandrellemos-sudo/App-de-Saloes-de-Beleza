@@ -150,6 +150,12 @@ button{cursor:pointer}
 .wz-av{width:52px;height:52px;border-radius:50%;overflow:hidden;background:var(--blush);display:grid;place-items:center;font-size:.65rem;color:var(--suave);flex-shrink:0}
 .wz-av img{width:100%;height:100%;object-fit:cover}
 .wz-rot{display:block;font-size:.82rem;color:var(--suave);margin-bottom:6px}
+.imp-passo{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.imp-passo input[type=file]{max-width:100%;font:inherit}
+.imp-lista{margin:12px 0;font-size:.85rem;color:var(--suave)}
+.imp-lista b{display:block;color:var(--tinta);margin-bottom:4px}
+.imp-lista div{padding:4px 0;border-top:1px solid var(--linha);overflow-wrap:anywhere}
+.imp-lista small{display:block;margin-top:4px}
 .sc-livre summary{cursor:pointer;color:var(--vinho);font-weight:600;margin:12px 0 8px}
 .sc-cores{display:flex;gap:16px;flex-wrap:wrap}
 .sc-prev{border:1px solid var(--linha);border-radius:14px;overflow:hidden;margin-top:14px;max-width:340px}
@@ -333,7 +339,7 @@ function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');setT
 const SUPORTE_WA = 'https://wa.me/5513997748468?text=' + encodeURIComponent('Oi! Preciso de ajuda com o Mango Beauty.');
 document.querySelectorAll('.suporte-link').forEach(a=>a.href=SUPORTE_WA);
 
-let SALAO=null, PROFISSIONAIS=[], TOTAL_CLIENTES=0;
+let SALAO=null, PROFISSIONAIS=[], TOTAL_CLIENTES=0, IMP=null;
 const STATUS_TXT={confirmado:'Confirmado', concluido:'Concluído', falta:'Faltou'};
 const PROX_STATUS={confirmado:'concluido', concluido:'falta', falta:'confirmado'};
 const fmt=v=>{v=Number(v||0);return 'R$ '+v.toLocaleString('pt-BR',Number.isInteger(v)?{}:{minimumFractionDigits:2,maximumFractionDigits:2})};
@@ -374,7 +380,7 @@ function renderBannerAssinatura(){
       el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">Você chegou ao limite de ${limC} clientes do plano grátis. Assine um plano pra continuar cadastrando clientes novas. ${btn('Ver planos','data-irassinatura')}</div></div>`;
       return;
     }
-    if(PROFISSIONAIS.length>=limP){
+    if(profissionaisAtivas()>=limP){
       el.innerHTML = `<div class="wrap"><div class="banner-trial vencido">Você chegou ao limite de ${limP} profissionais do plano grátis. ${btn('Ver planos','data-irassinatura')}</div></div>`;
       return;
     }
@@ -441,7 +447,7 @@ function renderAssinatura(){
       <p class="sub" style="margin:8px 0 0;font-size:.8rem">Aqui você troca o cartão, muda de plano, vê as faturas ou cancela.</p></div>`;
   } else {
     cartaoStatus = `<div class="grupo2"><span>Seu plano</span>
-      <p class="sub" style="margin:0">Você está no plano <b>Grátis</b>, sem prazo pra acabar: <b>${TOTAL_CLIENTES} de ${PLANOS.essencial.limiteClientes}</b> clientes · <b>${PROFISSIONAIS.length} de ${PLANOS.essencial.limiteProfissionais}</b> profissionais.</p>
+      <p class="sub" style="margin:0">Você está no plano <b>Grátis</b>, sem prazo pra acabar: <b>${TOTAL_CLIENTES} de ${PLANOS.essencial.limiteClientes}</b> clientes · <b>${profissionaisAtivas()} de ${PLANOS.essencial.limiteProfissionais}</b> profissionais.</p>
       <p class="sub" style="margin:6px 0 0">Continue usando sem custo até esses limites. Quando o salão crescer, é só assinar um plano abaixo.</p>
       ${SALAO.stripe_customer_id?'<button class="linkbtn" data-abrirportal style="margin-top:8px">Ver faturas antigas</button>':''}</div>`;
   }
@@ -523,7 +529,7 @@ async function carregarSalaoDoDono(userId){
 
 let abaAtual='agenda';
 function selecionarAba(tab){
-  abaAtual=tab;
+  abaAtual=tab; IMP=null;
   document.querySelectorAll('#abas button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.tab===tab));
   $('#tituloAba').textContent = TABS[tab];
   $('#abas')?.scrollIntoView?.({behavior:'smooth', block:'start'});
@@ -860,7 +866,8 @@ function renderClientes(){
   $('#conteudoAba').innerHTML = `
     ${renderGraficosClientes()}
     ${blocoCamposPersonalizados()}
-    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">${clienteNovo?'':'<button class="btn btn-vinho btn-sm" id="ncAbrir">+ Nova cliente</button>'}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">${clienteNovo?'':'<button class="btn btn-vinho btn-sm" id="ncAbrir" style="flex:1 1 180px;width:auto">+ Nova cliente</button><button class="btn btn-linha btn-sm" id="impCliAbrir" style="flex:0 0 auto">Importar planilha</button>'}</div>
+    ${IMP&&IMP.tipo==='clientes'?painelImportar():''}
     ${clienteNovo?formNovoCliente():''}
     ${envioBar}
     <div class="filtros"><input id="buscaCli" value="${escH($('#buscaCli')?.value||'')}" placeholder="Buscar por nome ou telefone"></div>
@@ -1099,7 +1106,8 @@ function renderListaProfissionais(){
           <span class="linkbtn">Ver ficha →</span>
         </div>`;
       }).join('') : '<p class="vazio">Nenhuma profissional encontrada.</p>'}</div>
-     <button class="btn btn-linha" id="eqAdd" style="width:100%;margin-top:14px">+ Adicionar profissional</button>`;
+     ${IMP&&IMP.tipo==='profissionais'?'<div style="margin-top:14px">'+painelImportar()+'</div>':''}
+     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn btn-linha" id="eqAdd" style="flex:1 1 180px">+ Adicionar profissional</button><button class="btn btn-linha" id="impProfAbrir" style="flex:1 1 180px">Importar planilha</button></div>`;
 }
 function renderFichaProfissional(){
   const p = PROFISSIONAIS.find(x=>x.id===profissionalAberta);
@@ -1195,13 +1203,15 @@ document.addEventListener('click', async e=>{
       return;
     }
     if(e.target.dataset.eqativo){
-      await sb.from('profissionais').update({ativo: e.target.dataset.valor==='true'}).eq('id',pid);
+      const reativando=e.target.dataset.valor==='true', limiteP=limiteProfissionaisAtual();
+      if(reativando && profissionaisAtivas()>=limiteP){ toast(`Seu plano permite até ${limiteP} profissionais ativas. Assine um plano maior na aba Assinatura pra reativar mais.`); return; }
+      await sb.from('profissionais').update({ativo: reativando}).eq('id',pid);
       await carregarEquipe(); renderEquipe(); return;
     }
   }
   if(e.target.id==='eqAdd'){
     const limiteP=limiteProfissionaisAtual();
-    if(PROFISSIONAIS.length>=limiteP){ toast(`Seu plano permite até ${limiteP} profissionais. Assine um plano maior na aba Assinatura pra cadastrar mais.`); return; }
+    if(profissionaisAtivas()>=limiteP){ toast(`Seu plano permite até ${limiteP} profissionais. Assine um plano maior na aba Assinatura pra cadastrar mais.`); return; }
     const {data:nova} = await sb.from('profissionais').insert({salao_id:SALAO.id, nome:'Nova profissional', dias:SALAO.horario_dias||[2,3,4,5,6], horas:horasSalao(), comissao:{tipo:'pct',valor:40}}).select('id').maybeSingle();
     await carregarEquipe(); if(nova) profissionalAberta=nova.id; renderEquipe(); renderBannerAssinatura(); return;
   }
@@ -1686,6 +1696,414 @@ document.addEventListener('click', async e=>{
     await sb.from('saloes').update({galeria:SALAO.galeria}).eq('id',SALAO.id);
     renderAparencia(); toast('Banner removido');
   }
+});
+
+/* ---------------- IMPORTAÇÃO EM LOTE (planilha de clientes e de profissionais) ---------------- */
+const SHEETJS_URL='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+const IMP_MAX_BYTES=5*1024*1024, IMP_MAX_LINHAS=5000, IMP_PASSO=200;
+const IMP_SIN={
+  clientes:{
+    nome:['nome','cliente','clientes','nomecliente','nomedacliente','nomedocliente','nomecompleto'],
+    telefone:['whatsapp','telefone','celular','fone','tel','whats','zap','contato','numero','telefonecelular','celularwhatsapp','telefonewhatsapp','whatsappcomddd'],
+    email:['email','emailcliente','correioeletronico'],
+    aniversario:['aniversario','nascimento','datanascimento','datadenascimento','dtnascimento','nasc','aniversariante','dataaniversario'],
+    filhos:['temfilhos','filhos','possuifilhos','temfilho']
+  },
+  profissionais:{
+    nome:['nome','profissional','colaboradora','colaborador','funcionaria','funcionario','nomeprofissional','nomedaprofissional','nomecompleto'],
+    telefone:['whatsapp','telefone','celular','fone','tel','whats','zap','contato','numero','telefonecelular','celularwhatsapp','telefonewhatsapp','whatsappcomddd'],
+    comissao:['comissao','comissaopercentual','percentualcomissao','percentual','porcentagem','comissaopct']
+  }
+};
+const IMP_OBRIG={clientes:['nome','telefone'], profissionais:['nome','comissao']};
+const IMP_OBRIG_TXT={clientes:'Nome e WhatsApp', profissionais:'Nome e Comissão (%)'};
+
+/* leitor de planilhas: só é baixado quando a dona usa a importação (ou o modelo) */
+function carregarSheetJS(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  if(window._sheetjsPromessa) return window._sheetjsPromessa;
+  window._sheetjsPromessa=new Promise((ok,falha)=>{
+    const s=document.createElement('script');
+    s.src=SHEETJS_URL; s.async=true;
+    s.onload=()=>{ if(window.XLSX) ok(window.XLSX); else { window._sheetjsPromessa=null; falha(new Error('sheetjs')); } };
+    s.onerror=()=>{ window._sheetjsPromessa=null; falha(new Error('sheetjs')); };
+    document.head.appendChild(s);
+  });
+  return window._sheetjsPromessa;
+}
+
+/* ---- leitura de células ---- */
+const impSemAcento=s=>String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const impChave=s=>impSemAcento(s).toLowerCase().replace(/[^a-z0-9]/g,'');
+function impCelTexto(c){
+  if(!c||c.v==null) return '';
+  if(typeof c.v==='number') return String(c.v);
+  if(typeof c.v==='boolean') return c.v?'sim':'não';
+  return String(c.v).replace(/\s+/g,' ').trim();
+}
+function impNormalizarFone(raw){
+  let d=String(raw==null?'':raw).replace(/\D/g,'').replace(/^0+/,'');
+  if((d.length===12||d.length===13) && d.startsWith('55')) d=d.slice(2);
+  return d;
+}
+function impLerFone(cel){
+  let t=impCelTexto(cel);
+  if(!t) return {erro:'WhatsApp em branco'};
+  if(cel.t!=='n' && /^\d+([.,]\d+)?\s*e\s*\+?\d+$/i.test(t))
+    return {erro:'o Excel transformou o número em notação científica (ex.: 5,5E+12) — formate a coluna como Texto e digite de novo'};
+  t=t.replace(/^(\d+)[.,]0+$/,'$1');
+  const f=impNormalizarFone(t);
+  if(!f) return {erro:'WhatsApp sem números'};
+  if(f.length<10||f.length>11) return {erro:`WhatsApp com ${f.length} dígitos (use DDD + número, 10 ou 11 dígitos)`};
+  if(Number(f.slice(0,2))<11) return {erro:'DDD inválido'};
+  return {fone:f};
+}
+function impLerEmail(cel){
+  const t=impCelTexto(cel).toLowerCase();
+  if(!t) return {};
+  if(t.length<=254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return {email:t};
+  return {aviso:`e-mail "${t.slice(0,30)}" inválido, ignorado`};
+}
+function impLerData(cel){
+  const t=impCelTexto(cel);
+  if(!t) return {};
+  let a,m,d,x;
+  if(cel.t==='n'){
+    // número de série do Excel; abaixo de 10000 (antes de 1927) é quase certo ser só um ano digitado, não uma data
+    if(!Number.isFinite(cel.v)||cel.v<10000||cel.v>2958465) return {aviso:`aniversário "${t.slice(0,20)}" ignorado (use dd/mm/aaaa)`};
+    const dt=new Date(Date.UTC(1899,11,30)+Math.floor(cel.v)*864e5);
+    a=dt.getUTCFullYear(); m=dt.getUTCMonth()+1; d=dt.getUTCDate();
+  } else if((x=/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/.exec(t))){ d=+x[1]; m=+x[2]; a=+x[3]; }
+  else if((x=/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/.exec(t))){ a=+x[1]; m=+x[2]; d=+x[3]; }
+  else return {aviso:`aniversário "${t.slice(0,20)}" ignorado (use dd/mm/aaaa)`};
+  const hoje=new Date();
+  const valido=a>=1900 && a<=hoje.getFullYear() && m>=1 && m<=12 && d>=1 && d<=new Date(Date.UTC(a,m,0)).getUTCDate();
+  if(!valido) return {aviso:`aniversário "${t.slice(0,20)}" ignorado (data inválida)`};
+  const iso=`${a}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  if(iso>hoje.toISOString().slice(0,10)) return {aviso:'aniversário no futuro ignorado'};
+  return {data:iso};
+}
+function impLerSimNao(cel){
+  if(cel && cel.t==='b') return {v:!!cel.v};
+  const t=impChave(impCelTexto(cel));
+  if(!t) return {v:null};
+  if(['sim','s','yes','y','1','true'].includes(t)) return {v:true};
+  if(['nao','n','no','0','false','falso'].includes(t)) return {v:false};
+  return {v:null, aviso:`"Tem filhos" com "${impCelTexto(cel).slice(0,15)}" ignorado (use Sim ou Não)`};
+}
+function impLerComissao(cel){
+  const t=impCelTexto(cel);
+  if(!t) return {erro:'comissão em branco (coloque 0 se ela não recebe comissão)'};
+  let n, comPct=false;
+  if(cel.t==='n'){ n=cel.v; comPct=/%/.test(cel.z||''); if(comPct) n=n*100; }
+  else{
+    if(/r\$/i.test(t)) return {erro:'a comissão deve ser em porcentagem (valor fixo em R$ dá pra ajustar na ficha dela)'};
+    comPct=/%/.test(t);
+    n=Number(t.replace('%','').replace(/\s/g,'').replace(',','.'));
+    if(!Number.isFinite(n)) return {erro:`comissão "${t.slice(0,15)}" não é um número`};
+  }
+  if(!Number.isFinite(n)||n<0||n>100) return {erro:'a comissão deve ficar entre 0 e 100'};
+  n=Math.round(n*100)/100;
+  return {valor:n, aviso:(!comPct && n>0 && n<1) ? `comissão ficou em ${n}% — confira se não era ${Math.round(n*100)}%` : undefined};
+}
+
+/* ---- planilha -> grade de células ---- */
+function impGradeXlsx(XLSX, wb, abaPreferida){
+  const nomes=wb.SheetNames||[];
+  const alvo=nomes.find(n=>impChave(n)===abaPreferida)||nomes[0];
+  const ws=alvo && wb.Sheets[alvo];
+  if(!ws||!ws['!ref']) return {grade:[],base:0};
+  const rg=XLSX.utils.decode_range(ws['!ref']);
+  if(rg.e.r-rg.s.r>50000) throw new Error('arquivo grande');
+  const ultCol=Math.min(rg.e.c, rg.s.c+29), grade=[];
+  for(let r=rg.s.r;r<=rg.e.r;r++){
+    const lin=[];
+    for(let c=rg.s.c;c<=ultCol;c++){
+      const cel=ws[XLSX.utils.encode_cell({r,c})];
+      lin.push(cel?{v:cel.v,t:cel.t,z:cel.z}:{v:'',t:'s'});
+    }
+    grade.push(lin);
+  }
+  return {grade,base:rg.s.r};
+}
+function impGradeCsv(texto){
+  texto=texto.replace(/^\uFEFF/,'');
+  const primeira=(texto.split(/\r?\n/).find(l=>l.trim())||'');
+  const cont=ch=>primeira.split(ch).length-1;
+  const cs=cont(';'), cv=cont(','), ct=cont('\t');
+  const sep=(cs>=cv && cs>=ct && cs>0) ? ';' : (ct>cv && ct>0 ? '\t' : ',');
+  const grade=[]; let lin=[], cel='', aspas=false;
+  for(let i=0;i<texto.length;i++){
+    const ch=texto[i];
+    if(aspas){ if(ch==='"'){ if(texto[i+1]==='"'){ cel+='"'; i++; } else aspas=false; } else cel+=ch; }
+    else if(ch==='"') aspas=true;
+    else if(ch===sep){ lin.push({v:cel,t:'s'}); cel=''; }
+    else if(ch==='\n'||ch==='\r'){ if(ch==='\r'&&texto[i+1]==='\n') i++; lin.push({v:cel,t:'s'}); grade.push(lin); lin=[]; cel=''; }
+    else cel+=ch;
+  }
+  if(cel!==''||lin.length){ lin.push({v:cel,t:'s'}); grade.push(lin); }
+  return {grade,base:0};
+}
+function impDecodificarCsv(buf){
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }
+  catch(e){ return new TextDecoder('windows-1252').decode(buf); }   // CSV "ANSI" do Excel em português
+}
+function impLerBuffer(file){
+  return new Promise((ok,falha)=>{ const fr=new FileReader(); fr.onload=()=>ok(fr.result); fr.onerror=()=>falha(fr.error); fr.readAsArrayBuffer(file); });
+}
+function impAcharCabecalho(grade, tipo){
+  const sin=IMP_SIN[tipo], obrig=IMP_OBRIG[tipo];
+  for(let i=0;i<Math.min(grade.length,15);i++){
+    const mapa={};
+    grade[i].forEach((cel,j)=>{
+      const k=impChave(impCelTexto(cel)); if(!k) return;
+      for(const campo of Object.keys(sin)) if(mapa[campo]===undefined && sin[campo].includes(k)) mapa[campo]=j;
+    });
+    if(obrig.every(c=>mapa[c]!==undefined)) return {linha:i,mapa};
+  }
+  return null;
+}
+
+/* ---- linhas -> prévia ---- */
+function impProcessarClientes(g, cab, existentes){
+  const r={total:0,importar:[],duplicadas:[],erros:[],avisos:[]}, vistos=new Map();
+  for(let i=cab.linha+1;i<g.grade.length;i++){
+    const row=g.grade[i];
+    if(row.every(c=>!impCelTexto(c))) continue;
+    if(++r.total>IMP_MAX_LINHAS) return {erroGeral:`A planilha tem mais de ${IMP_MAX_LINHAS} linhas. Divida em arquivos menores.`};
+    const linha=g.base+i+1, cel=k=>cab.mapa[k]===undefined?undefined:row[cab.mapa[k]];
+    const nome=impCelTexto(cel('nome')), motivos=[];
+    if(!nome) motivos.push('nome em branco'); else if(nome.length>120) motivos.push('nome muito longo (máx. 120 letras)');
+    const f=impLerFone(cel('telefone')); if(f.erro) motivos.push(f.erro);
+    if(motivos.length){ r.erros.push({linha,nome:nome||'(sem nome)',motivo:motivos.join('; ')}); continue; }
+    if(existentes.has(f.fone)){ r.duplicadas.push({linha,nome,motivo:'WhatsApp já cadastrado no Amora'}); continue; }
+    if(vistos.has(f.fone)){ r.duplicadas.push({linha,nome,motivo:`WhatsApp repetido na planilha (igual ao da linha ${vistos.get(f.fone)})`}); continue; }
+    vistos.set(f.fone,linha);
+    const av=[], em=impLerEmail(cel('email')), an=impLerData(cel('aniversario')), fi=impLerSimNao(cel('filhos'));
+    [em.aviso,an.aviso,fi.aviso].forEach(a=>{ if(a) av.push(a); });
+    if(av.length) r.avisos.push({linha,nome,motivo:av.join('; ')});
+    r.importar.push({linha,nome,fone:f.fone,email:em.email||null,aniversario:an.data||null,filhos:fi.v});
+  }
+  return r;
+}
+function impProcessarProfissionais(g, cab, nomesExistentes){
+  const r={total:0,importar:[],duplicadas:[],erros:[],avisos:[]}, vistos=new Map();
+  for(let i=cab.linha+1;i<g.grade.length;i++){
+    const row=g.grade[i];
+    if(row.every(c=>!impCelTexto(c))) continue;
+    if(++r.total>200) return {erroGeral:'A planilha tem mais de 200 profissionais. Divida em arquivos menores.'};
+    const linha=g.base+i+1, cel=k=>cab.mapa[k]===undefined?undefined:row[cab.mapa[k]];
+    const nome=impCelTexto(cel('nome')), motivos=[];
+    if(!nome) motivos.push('nome em branco'); else if(nome.length>80) motivos.push('nome muito longo (máx. 80 letras)');
+    const co=impLerComissao(cel('comissao')); if(co.erro) motivos.push(co.erro);
+    if(motivos.length){ r.erros.push({linha,nome:nome||'(sem nome)',motivo:motivos.join('; ')}); continue; }
+    const chave=impChave(nome);
+    if(nomesExistentes.has(chave)){ r.duplicadas.push({linha,nome,motivo:'já existe uma profissional ativa com esse nome'}); continue; }
+    if(vistos.has(chave)){ r.duplicadas.push({linha,nome,motivo:`nome repetido na planilha (igual ao da linha ${vistos.get(chave)})`}); continue; }
+    vistos.set(chave,linha);
+    const av=[]; let fone=null;
+    const ft=impCelTexto(cel('telefone'));
+    if(ft){ const f=impLerFone(cel('telefone')); if(f.erro) av.push(`WhatsApp ignorado (${f.erro})`); else fone=f.fone; }
+    if(co.aviso) av.push(co.aviso);
+    if(av.length) r.avisos.push({linha,nome,motivo:av.join('; ')});
+    r.importar.push({linha,nome,fone,comissao:co.valor});
+  }
+  return r;
+}
+
+/* ---- telefones que já existem (pagina: o Supabase devolve no máximo ~1000 por pedido) ---- */
+async function impTelefonesExistentes(){
+  const set=new Set(); let ini=0, total=0;
+  for(;;){
+    const {data,error}=await sb.from('clientes').select('telefone').eq('salao_id',SALAO.id).order('id').range(ini,ini+999);
+    if(error) throw error;
+    if(!data||!data.length) break;
+    data.forEach(r=>{ const f=impNormalizarFone(r.telefone); if(f) set.add(f); });
+    total+=data.length; ini+=data.length;
+  }
+  return {set,total};
+}
+
+/* ---- estado e tela ---- */
+const profissionaisAtivas=()=>PROFISSIONAIS.filter(p=>p.ativo!==false).length;
+function impAbrir(tipo){ IMP={tipo,fase:'inicio',erro:'',previa:null,resultado:null,seq:0}; impRender(); }
+function impRender(){
+  if(abaAtual==='clientes') renderClientes(); else if(abaAtual==='equipe') renderEquipe();
+  const p=$('#impPainel'); if(p&&p.scrollIntoView) p.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+const impPl=(n,s,p)=>n===1?s:p;
+function impListaHTML(titulo, itens, max){
+  if(!itens.length) return '';
+  return `<div class="imp-lista"><b>${titulo}</b>${itens.slice(0,max).map(i=>`<div>Linha ${i.linha} · ${escH(i.nome)} — ${escH(i.motivo)}</div>`).join('')}${itens.length>max?`<small>…e mais ${itens.length-max}</small>`:''}</div>`;
+}
+function painelImportar(){
+  const t=IMP.tipo, plural=t==='clientes'?'clientes':'profissionais';
+  let c='';
+  if(IMP.fase==='inicio'){
+    c=`<p class="sub" style="margin:0 0 6px">Cadastre várias ${plural} de uma vez, a partir de uma planilha do Excel (.xlsx) ou de um arquivo .csv.</p>
+      <div class="imp-passo"><b>1.</b> Baixe o modelo e preencha com os dados <button class="btn btn-linha btn-sm" type="button" data-impmodelo>Baixar modelo</button></div>
+      <div class="imp-passo"><b>2.</b> Escolha o arquivo preenchido <input type="file" id="impArquivo" accept=".xlsx,.xls,.csv"></div>
+      ${IMP.erro?`<p class="erro">${escH(IMP.erro)}</p>`:''}
+      <p class="sub" style="font-size:.8rem;margin:6px 0 0">Você confere tudo antes de importar — nada é salvo até você confirmar.</p>`;
+  } else if(IMP.fase==='lendo'){
+    c='<p class="sub" style="margin:0">Lendo a planilha…</p>';
+  } else if(IMP.fase==='importando'){
+    c=`<p class="sub" style="margin:0">Importando as ${plural}… não feche esta tela.</p>`;
+  } else if(IMP.fase==='previa'){
+    const p=IMP.previa, n=p.dentro.length, sing=t==='clientes'?['cliente','clientes']:['profissional','profissionais'];
+    const kpi=(num,txt,cls='')=>`<div class="kpi ${cls}"><b>${num}</b><span>${txt}</span></div>`;
+    c=`<div class="kpis">${kpi(n,'serão importadas','destaque')}${kpi(p.r.duplicadas.length,'puladas (já existem ou repetidas)')}${kpi(p.r.erros.length,'com erro (não entram)')}${p.acima.length?kpi(p.acima.length,'acima do limite do plano'):''}</div>
+      ${p.acima.length?`<p class="erro" style="margin:12px 0 0">Seu plano (${escH(PLANOS[efetivoPlano()].nome)}) permite até ${p.limite} ${plural} e você já tem ${p.atuais}. ${n>0?`Vamos importar só as primeiras ${n}; as outras ${p.acima.length} ficam de fora.`:'Por isso nenhuma entra agora.'} <button class="linkbtn" type="button" data-irassinatura>Ver planos</button></p>`:''}
+      ${n>0?`<p class="sub" style="margin:12px 0 0;font-size:.85rem">Primeiras: ${p.dentro.slice(0,5).map(r=>escH(r.nome)).join(', ')}${n>5?'…':''}</p>`:''}
+      ${impListaHTML('Com erro — essas linhas não entram',p.r.erros,8)}
+      ${impListaHTML('Puladas',p.r.duplicadas,8)}
+      ${impListaHTML('Avisos — entram mesmo assim, sem o campo com problema',p.r.avisos,5)}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <button class="btn btn-vinho btn-sm" type="button" data-impconfirmar ${n?'':'disabled'}>Importar ${n} ${n===1?sing[0]:sing[1]}</button>
+        <button class="btn btn-linha btn-sm" type="button" data-impoutro>Escolher outro arquivo</button>
+      </div>`;
+  } else if(IMP.fase==='fim'){
+    const x=IMP.resultado, p=x.previa;
+    const linhas=[];
+    if(x.falhou) linhas.push(`<p class="erro" style="margin:0 0 8px">A importação foi interrompida por um erro${x.inseridas?` depois de ${x.inseridas} ${t==='clientes'?impPl(x.inseridas,'cliente','clientes'):impPl(x.inseridas,'profissional','profissionais')}`:''}. ${t==='clientes'?'É seguro subir a mesma planilha de novo: quem já entrou é pulada.':'Nada foi salvo. Tente de novo em instantes.'}</p>`);
+    else linhas.push(`<p style="margin:0 0 8px"><b>Pronto!</b> Importamos ${x.inseridas} ${t==='clientes'?(x.inseridas===1?'cliente':'clientes'):(x.inseridas===1?'profissional':'profissionais')}.</p>`);
+    const pulou=p.r.duplicadas.length+(x.falhou?0:Math.max(0,p.dentro.length-x.inseridas));
+    if(!x.falhou && pulou) linhas.push(`<p class="sub" style="margin:0 0 4px">• ${pulou} ${impPl(pulou,'pulada','puladas')} por já existirem ou estarem repetidas.</p>`);
+    if(p.r.erros.length) linhas.push(`<p class="sub" style="margin:0 0 4px">• ${p.r.erros.length} ${impPl(p.r.erros.length,'não importada','não importadas')} por erro na linha.</p>`);
+    if(p.acima.length) linhas.push(`<p class="sub" style="margin:0 0 4px">• ${p.acima.length} ${impPl(p.acima.length,'ficou','ficaram')} de fora por causa do limite do plano. <button class="linkbtn" type="button" data-irassinatura>Ver planos</button></p>`);
+    if(t==='profissionais' && x.inseridas>0) linhas.push(`<p class="sub" style="margin:10px 0 0"><b>Falta um passo:</b> abra a ficha de cada profissional e marque os serviços que ela faz. Enquanto não marcar, ela não aparece pra agendamento no site. Os dias e horários começaram iguais aos do salão.</p>`);
+    linhas.push('<div style="margin-top:12px"><button class="btn btn-linha btn-sm" type="button" data-impfechar>Fechar</button></div>');
+    c=linhas.join('');
+  }
+  const titulo=t==='clientes'?'Importar clientes de uma planilha':'Importar profissionais de uma planilha';
+  const podeCancelar=IMP.fase==='inicio'||IMP.fase==='previa';
+  return `<div class="exc-form" id="impPainel" style="margin:0 0 14px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><b>${titulo}</b>${podeCancelar?'<button class="linkbtn" type="button" data-impfechar>Cancelar</button>':''}</div>${c}</div>`;
+}
+
+/* ---- fluxo: arquivo -> prévia -> confirmar ---- */
+async function impProcessarArquivo(file){
+  if(!IMP) return;
+  const seq=++IMP.seq, vivo=()=>IMP&&IMP.seq===seq;
+  const volta=msg=>{ if(!vivo()) return; IMP.fase='inicio'; IMP.erro=msg; IMP.previa=null; impRender(); };
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  if(!['xlsx','xls','csv'].includes(ext)) return volta('Escolha um arquivo .xlsx (Excel) ou .csv.');
+  if(file.size>IMP_MAX_BYTES) return volta('O arquivo é grande demais (máximo 5 MB). Divida em partes menores.');
+  IMP.fase='lendo'; IMP.erro=''; impRender();
+  let grade;
+  try{
+    const buf=await impLerBuffer(file);
+    if(ext==='csv') grade=impGradeCsv(impDecodificarCsv(buf));
+    else{
+      let XLSX; try{ XLSX=await carregarSheetJS(); }catch(e){ return volta('Não foi possível carregar o leitor de planilhas. Verifique sua conexão e tente de novo.'); }
+      grade=impGradeXlsx(XLSX, XLSX.read(buf,{type:'array',cellNF:true}), IMP.tipo);
+    }
+  }catch(e){ return volta('Não consegui ler esse arquivo. Use o modelo (.xlsx) ou um arquivo .csv.'); }
+  if(!vivo()) return;
+  const cab=impAcharCabecalho(grade.grade, IMP.tipo);
+  if(!cab){
+    const achadas=(grade.grade.find(l=>l.some(c=>impCelTexto(c)))||[]).map(impCelTexto).filter(Boolean).slice(0,6);
+    return volta(`Não encontrei as colunas ${IMP_OBRIG_TXT[IMP.tipo]}.${achadas.length?` Colunas que encontrei: ${achadas.join(', ')}.`:''} Use o botão "Baixar modelo" ou ajuste os títulos da planilha.`);
+  }
+  let r, atuais, limite;
+  try{
+    if(IMP.tipo==='clientes'){
+      const ex=await impTelefonesExistentes(); atuais=ex.total; limite=limiteClientesAtual();
+      if(!vivo()) return;
+      r=impProcessarClientes(grade,cab,ex.set);
+    } else {
+      atuais=profissionaisAtivas(); limite=limiteProfissionaisAtual();
+      r=impProcessarProfissionais(grade,cab,new Set(PROFISSIONAIS.filter(p=>p.ativo!==false).map(p=>impChave(p.nome))));
+    }
+  }catch(e){ return volta('Não foi possível conferir o que já está cadastrado. Tente de novo.'); }
+  if(!vivo()) return;
+  if(r.erroGeral) return volta(r.erroGeral);
+  const cap=Math.max(0,limite-atuais);
+  IMP.previa={r,atuais,limite,dentro:r.importar.slice(0,cap),acima:r.importar.slice(cap)};
+  IMP.fase='previa'; impRender();
+}
+async function impGravarClientes(p){
+  const linhas=p.dentro.map(r=>({salao_id:SALAO.id,nome:r.nome,telefone:r.fone,email:r.email,aniversario:r.aniversario,tem_filhos:r.filhos}));
+  let ins=0;
+  for(let i=0;i<linhas.length;i+=IMP_PASSO){
+    const {data,error}=await sb.from('clientes').upsert(linhas.slice(i,i+IMP_PASSO),{onConflict:'salao_id,telefone',ignoreDuplicates:true}).select('id');
+    if(error){ const e=new Error('falha'); e.inseridas=ins; throw e; }
+    ins+=(data||[]).length;
+  }
+  return ins;
+}
+async function impGravarProfissionais(p){
+  const dias=SALAO.horario_dias||[2,3,4,5,6], horas=horasSalao();
+  const linhas=p.dentro.map(r=>({salao_id:SALAO.id,nome:r.nome,telefone:r.fone,dias,horas,comissao:{tipo:'pct',valor:r.comissao}}));
+  const {data,error}=await sb.from('profissionais').insert(linhas).select('id');
+  if(error){ const e=new Error('falha'); e.inseridas=0; throw e; }
+  return (data||[]).length;
+}
+async function impConfirmar(){
+  if(!IMP||IMP.fase!=='previa') return;
+  const p=IMP.previa, tipo=IMP.tipo;
+  IMP.fase='importando'; impRender();
+  let inseridas=0, falhou=false;
+  try{ inseridas = tipo==='clientes' ? await impGravarClientes(p) : await impGravarProfissionais(p); }
+  catch(e){ falhou=true; inseridas=e.inseridas||0; }
+  try{ if(tipo==='clientes') await carregarClientes(); else { await carregarEquipe(); renderBannerAssinatura(); } }catch(e){}
+  if(!IMP||IMP.tipo!==tipo) return;   // saiu da tela no meio: nada a mostrar
+  IMP.resultado={inseridas,falhou,previa:p}; IMP.fase='fim'; impRender();
+}
+
+/* ---- modelo de planilha (gerado no navegador, na hora do clique) ---- */
+async function impBaixarModelo(){
+  let XLSX; try{ XLSX=await carregarSheetJS(); }catch(e){ toast('Não foi possível carregar o gerador de planilha. Verifique sua conexão.'); return; }
+  const cli=!IMP||IMP.tipo==='clientes';
+  const cab=cli?['Nome','WhatsApp','E-mail','Aniversário','Tem filhos']:['Nome','WhatsApp','Comissão (%)'];
+  const texto=cli?[1,3]:[1];
+  const ajuda=cli?[
+    ['Como preencher a planilha de clientes'],[''],
+    ['Uma cliente por linha, abaixo dos títulos da aba "Clientes". Não mude os títulos das colunas.'],[''],
+    ['Nome — obrigatório.'],
+    ['WhatsApp — obrigatório. Com DDD e só números (pontuação não atrapalha). Ex.: 13999998888. Não precisa colocar +55.'],
+    ['E-mail — opcional.'],
+    ['Aniversário — opcional. Dia/mês/ano com 4 dígitos. Ex.: 25/12/1990.'],
+    ['Tem filhos — opcional. Escreva Sim ou Não, ou deixe em branco.'],[''],
+    ['Antes de importar, o Amora mostra um resumo e você confere tudo. Só depois de confirmar é que as clientes entram.'],
+    ['WhatsApp que já existe no Amora é pulado: a cliente não é duplicada nem alterada.'],
+    ['Se o Excel mostrar o WhatsApp assim: 5,51E+12 — clique na coluna com o botão direito > Formatar células > Texto e digite o número de novo.']
+  ]:[
+    ['Como preencher a planilha de profissionais'],[''],
+    ['Uma profissional por linha, abaixo dos títulos da aba "Profissionais". Não mude os títulos das colunas.'],[''],
+    ['Nome — obrigatório.'],
+    ['WhatsApp — opcional. Com DDD e só números. Serve pra enviar o recibo de comissão.'],
+    ['Comissão (%) — obrigatória. Número de 0 a 100. Coloque 0 se ela não recebe comissão. Valor fixo em R$ dá pra ajustar depois, na ficha dela.'],[''],
+    ['Os dias e horários de cada uma começam iguais aos do salão; você ajusta na ficha.'],
+    ['Os serviços que cada uma faz você marca depois, na ficha dela (Equipe e comissões). Enquanto não marcar, ela não aparece pra agendamento no site.'],
+    ['Antes de importar, o Amora mostra um resumo e você confere tudo.']
+  ];
+  const ws=XLSX.utils.aoa_to_sheet([cab]);
+  for(let r=1;r<=1000;r++) texto.forEach(c=>{ ws[XLSX.utils.encode_cell({r,c})]={t:'s',v:'',z:'@'}; });   // colunas sensíveis já como Texto
+  ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:1000,c:cab.length-1}});
+  ws['!cols']=(cli?[30,18,28,14,12]:[30,18,14]).map(wch=>({wch}));
+  const wa=XLSX.utils.aoa_to_sheet(ajuda); wa['!cols']=[{wch:120}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,cli?'Clientes':'Profissionais');
+  XLSX.utils.book_append_sheet(wb,wa,'Como preencher');
+  const dados=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  const blob=new Blob([dados],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=cli?'modelo-clientes-amora.xlsx':'modelo-profissionais-amora.xlsx';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+document.addEventListener('click', async e=>{
+  const t=e.target;
+  if(t.id==='impCliAbrir' && abaAtual==='clientes'){ impAbrir('clientes'); return; }
+  if(t.id==='impProfAbrir' && abaAtual==='equipe'){ impAbrir('profissionais'); return; }
+  if(!IMP) return;
+  if(t.closest('[data-impmodelo]')){ await impBaixarModelo(); return; }
+  if(t.closest('[data-impfechar]')){ IMP=null; impRender(); return; }
+  if(t.closest('[data-impoutro]')){ IMP.fase='inicio'; IMP.previa=null; IMP.erro=''; impRender(); return; }
+  if(t.closest('[data-impconfirmar]')){ await impConfirmar(); return; }
+});
+document.addEventListener('change', e=>{
+  if(IMP && e.target.id==='impArquivo' && e.target.files && e.target.files[0]) impProcessarArquivo(e.target.files[0]);
 });
 
 /* ---------------- WIZARD DE PRIMEIRO ACESSO ---------------- */
