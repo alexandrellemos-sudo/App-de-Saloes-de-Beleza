@@ -12,8 +12,8 @@ if(/access_token=|error_description=|type=recovery/.test(location.hash) || /(^|[
 }
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Amora — O sistema completo para o seu salão</title>
-<meta name="description" content="Agendamento online, mini CRM, fidelidade e comissões automáticas. Tudo em um só lugar, com site personalizado pro seu salão. Grátis até 50 clientes.">
+<title>Amora — Agenda online e clientes voltando para o seu salão</title>
+<meta name="description" content="Agenda online, clientes que voltam, fidelidade, comissões e faturamento em um só lugar. Crie o seu salão grátis: sem cartão, sem prazo para acabar, grátis até 50 clientes.">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -51,14 +51,18 @@ a{color:inherit}
 .hero::before{content:'';position:absolute;top:-140px;right:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,var(--rosa) 0%,transparent 70%);opacity:.35;filter:blur(10px)}
 .hero::after{content:'';position:absolute;bottom:-160px;left:-140px;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,var(--vinho-2) 0%,transparent 70%);opacity:.3;filter:blur(10px)}
 .hero .wrap{position:relative}
-.selo{display:inline-flex;align-items:center;gap:8px;background:var(--blush);color:var(--vinho);font-size:.82rem;font-weight:700;padding:7px 16px;border-radius:999px;margin-bottom:22px}
+.selo{display:inline-flex;align-items:center;gap:8px;background:var(--blush);color:var(--vinho);font-size:.82rem;font-weight:800;letter-spacing:.04em;padding:7px 16px 7px 8px;border-radius:999px;margin-bottom:22px}
 .selo b{background:var(--rosa);color:#fff;border-radius:999px;padding:2px 9px;font-size:.76rem}
-.hero h1{font-size:clamp(2.2rem,5.5vw,3.6rem);max-width:16ch}
-.hero h1 .grad{background:linear-gradient(120deg,var(--vinho),var(--rosa));-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero p{color:var(--suave);font-size:1.12rem;max-width:46ch;margin:20px 0 30px}
+.hero h1{font-size:clamp(2rem,5vw,3.4rem);max-width:19ch}
+.hero h1 .grad,.tit-secao h2 .grad{background:linear-gradient(120deg,var(--vinho),var(--rosa));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--suave);font-size:1.12rem;max-width:50ch;margin:20px 0 0}
+.hero p+p{margin-top:12px}
+.hero .acoes{margin-top:30px}
 .hero p.lead{font-family:Sora,sans-serif;font-weight:700;color:var(--tinta);font-size:1.15rem;max-width:34ch;margin:16px 0 8px}
 .hero .acoes{display:flex;gap:14px;flex-wrap:wrap}
-.hero .aviso{margin-top:16px;font-size:.85rem;color:var(--suave)}
+.hero .aviso{margin-top:14px;font-size:.92rem;font-weight:600;color:var(--suave)}
+.so-desk{display:none}
+@media (min-width:520px){ .so-desk{display:inline} }
 
 /* seções */
 section{padding-block:70px}
@@ -72,6 +76,13 @@ section{padding-block:70px}
 /* recursos em linhas alternadas */
 .feature-row{display:flex;gap:48px;align-items:center;padding-block:52px;border-top:1px solid var(--linha);flex-wrap:wrap}
 .feature-row:first-child{border-top:0}
+.feature-row.destaque-row{background:var(--blush);border:0;border-radius:28px;padding:48px 36px;margin-bottom:14px}
+.feature-row.destaque-row h3{font-size:clamp(1.7rem,3.4vw,2.3rem)}
+.feature-row.destaque-row .card-recurso{box-shadow:0 18px 36px -22px rgba(62,31,92,.35)}
+.feature-row.destaque-row+.feature-row{border-top:0}
+.eyebrow{display:inline-block;color:var(--rosa);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+@media (max-width:760px){ .feature-row.destaque-row{padding:30px 20px;gap:28px} }
+.nota{font-size:.88rem!important}
 .feature-row.inverso{flex-direction:row-reverse}
 .feature-row>*{flex:1 1 320px;min-width:280px}
 .feature-texto h3{font-size:1.5rem;margin-bottom:14px}
@@ -127,6 +138,13 @@ section{padding-block:70px}
 .mk-site .linha-s{width:70%;height:5px;background:rgba(255,255,255,.6);border-radius:3px}
 .mk-site .btn-s{width:50%;height:12px;background:var(--rosa);border-radius:999px}
 
+/* depoimentos (estrutura pronta; só aparece quando houver depoimentos reais) */
+.depoimentos{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.depoimento{background:var(--card);border:1px solid var(--linha);border-radius:20px;padding:26px}
+.depoimento blockquote{margin:0 0 16px;font-size:1.02rem;line-height:1.6}
+.depoimento .quem{font-size:.86rem;color:var(--suave)}
+.depoimento .quem b{color:var(--tinta)}
+
 /* como funciona */
 .passos-como{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px}
 .passo-como{text-align:center}
@@ -173,47 +191,33 @@ footer a{text-decoration:underline}
       <a class="link" href="#recursos">Recursos</a>
       <a class="link" href="#precos">Planos</a>
       <a class="btn btn-linha btn-sm" href="admin.html">Entrar</a>
-      <a class="btn btn-primario btn-sm" href="admin.html#criar-conta">Começar grátis</a>
+      <a class="btn btn-primario btn-sm" href="admin.html#criar-conta"><span>Criar<span class="so-desk"> meu</span> salão grátis</span></a>
     </nav>
   </div>
 </div>
 
 <header class="hero">
   <div class="wrap">
-    <span class="selo"><b>NOVO</b> Grátis até 50 clientes</span>
-    <h1>Seu salão mais organizado. <span class="grad">Suas clientes mais perto.</span></h1>
-    <p class="lead">Agenda, clientes, fidelidade, comissões e faturamento em um só lugar.</p>
-    <p>O Amora tira da sua rotina aquilo que não precisa mais ser feito no WhatsApp, no papel ou na planilha — para você ter mais controle do salão e mais tempo para cuidar das suas clientes.</p>
+    <span class="selo"><b>R$ 0</b> GRÁTIS ATÉ 50 CLIENTES</span>
+    <h1>Seu salão organizado. Seus horários preenchidos. <span class="grad">Seus clientes voltando.</span></h1>
+    <p>O Amora coloca agenda online, clientes, fidelidade, comissões e faturamento em um só lugar.</p>
+    <p>Pare de depender do WhatsApp, da agenda de papel e das planilhas para fazer o salão funcionar.</p>
     <div class="acoes">
-      <a class="btn btn-primario" href="admin.html#criar-conta">Começar grátis</a>
+      <a class="btn btn-primario" href="admin.html#criar-conta">Criar meu salão grátis</a>
     </div>
-    <p class="aviso">Sem cartão. Sem prazo pra acabar. Comece em poucos minutos.</p>
+    <p class="aviso">Sem cartão de crédito. Sem prazo para acabar.</p>
   </div>
 </header>
 
 <section id="recursos">
   <div class="wrap">
     <div class="tit-secao">
-      <span>Recursos</span>
-      <h2>Tudo que seu salão precisa, num lugar só</h2>
-      <p>Chega de planilha, agenda de papel e cliente esquecida. O Amora cuida da rotina pra você focar em atender bem.</p>
+      <span>O que o Amora faz por você</span>
+      <h2>Tudo que você precisa para cuidar da rotina do salão, em um só lugar</h2>
+      <p>O jeito simples de organizar o salão e ajudar as clientes a voltarem.</p>
     </div>
 
-    <div class="feature-row">
-      <div class="card-recurso"><div class="mock"><div class="barra"><span></span><span></span><span></span></div>
-        <div class="tela">
-          <div class="mk-dias"><i></i><i class="on"></i><i></i><i></i><i></i></div>
-          <div class="mk-horas"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i></div>
-        </div></div></div>
-      <div class="feature-texto">
-        <h3>Sua agenda trabalha enquanto você atende</h3>
-        <p>Sua cliente escolhe o serviço, a profissional e o horário disponível — direto pelo seu site.</p>
-        <div class="balao">"Tem horário amanhã?"<br>"Quanto custa?"<br>"A fulana atende sábado?"</div>
-        <p>Sem ficar parando um atendimento pra responder essas mensagens. <span class="forte">Ela agenda sozinha. Você acompanha tudo.</span></p>
-      </div>
-    </div>
-
-    <div class="feature-row inverso">
+    <div class="feature-row destaque-row">
       <div class="card-recurso"><div class="mock"><div class="barra"><span></span><span></span><span></span></div>
         <div class="tela">
           <div class="mk-linha"><div class="mk-av"></div><div class="mk-nome" style="width:60%"></div><span class="mk-tag fiel">Fiel</span></div>
@@ -224,9 +228,26 @@ footer a{text-decoration:underline}
         <button class="mk-botao" type="button" tabindex="-1">Reativar clientes</button>
       </div>
       <div class="feature-texto">
-        <h3>Quem sumiu? O Amora te avisa.</h3>
-        <p>Você não precisa lembrar de quem está há meses sem aparecer.</p>
-        <p><span class="forte">O Amora identifica clientes que não voltaram e transforma essa informação em uma oportunidade de reativação.</span></p>
+        <span class="eyebrow">Para o salão faturar mais</span>
+        <h3>Você sabe quem está deixando de voltar?</h3>
+        <p>O Amora mostra quem está há mais tempo sem agendar e separa suas clientes em três grupos: <span class="forte">nova, fiel e sumida</span>.</p>
+        <p>Assim você enxerga quem precisa de um cupom, de uma mensagem ou de um convite para voltar, antes que o horário vago vire prejuízo.</p>
+        <p class="forte">Menos clientes esquecidas. Mais clientes voltando.</p>
+      </div>
+    </div>
+
+    <div class="feature-row inverso">
+      <div class="card-recurso"><div class="mock"><div class="barra"><span></span><span></span><span></span></div>
+        <div class="tela">
+          <div class="mk-dias"><i></i><i class="on"></i><i></i><i></i><i></i></div>
+          <div class="mk-horas"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i></div>
+        </div></div></div>
+      <div class="feature-texto">
+        <h3>Enquanto você atende, o Amora trabalha.</h3>
+        <p>Sua cliente escolhe o serviço, a profissional e o horário disponível e faz o agendamento sozinha.</p>
+        <p>Sem precisar perguntar:</p>
+        <div class="balao">"Tem horário amanhã?"<br>"Quanto custa?"<br>"A fulana atende sábado?"</div>
+        <p class="forte">Sua agenda continua funcionando mesmo quando você está ocupada atendendo.</p>
       </div>
     </div>
 
@@ -238,9 +259,8 @@ footer a{text-decoration:underline}
         </div></div></div>
       <div class="feature-texto">
         <h3>Dê um motivo para sua cliente voltar.</h3>
-        <p>Crie uma experiência de fidelidade sem precisar controlar tudo manualmente.</p>
-        <p>A cliente acompanha seu progresso e sabe quanto falta para conquistar o próximo benefício.</p>
-        <p class="forte">Cupons + fidelidade + reativação. Tudo conectado à sua agenda.</p>
+        <p>Crie benefícios, cupons e recompensas para o seu salão. A cliente acompanha o próprio progresso e sabe quanto falta para o próximo prêmio.</p>
+        <p class="forte">Fidelidade conectada à agenda para transformar uma visita em várias.</p>
       </div>
     </div>
 
@@ -252,10 +272,10 @@ footer a{text-decoration:underline}
           <div class="mk-total"><span>Total</span><span>R$ 64</span></div>
         </div></div></div>
       <div class="feature-texto">
-        <h3>E a comissão de cada profissional?</h3>
-        <p>Você não precisa fechar o mês com calculadora, caderno e planilha.</p>
-        <p>Cada atendimento registrado alimenta automaticamente o controle de comissões.</p>
-        <p class="forte">Você sabe quanto cada profissional gerou e quanto precisa receber.</p>
+        <h3>Comissões sem calculadora, caderno ou planilha.</h3>
+        <p>Cada atendimento registrado alimenta automaticamente o controle de comissão.</p>
+        <p>Você sabe quanto cada profissional produziu e quanto tem a receber.</p>
+        <p class="forte">Menos conta no fim do mês. Menos erro. Mais controle.</p>
       </div>
     </div>
 
@@ -266,9 +286,9 @@ footer a{text-decoration:underline}
           <div class="mk-barras"><i style="height:40%"></i><i style="height:65%"></i><i style="height:50%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:90%"></i></div>
         </div></div></div>
       <div class="feature-texto">
-        <h3>Saiba como o salão está indo — sem esperar o fim do mês.</h3>
-        <p>Faturamento, evolução e projeção em uma única tela.</p>
-        <p class="forte">Em vez de juntar recibos e planilhas para descobrir como foi o mês, você acompanha os números enquanto o mês acontece.</p>
+        <h3>Saiba como seu salão está indo enquanto o mês acontece.</h3>
+        <p>Acompanhe o faturamento do dia e do mês sem esperar o fechamento. Nos planos pagos, veja também a evolução e a projeção dos próximos meses.</p>
+        <p class="forte">Decida com número na mão, não no chute.</p>
       </div>
     </div>
 
@@ -278,10 +298,10 @@ footer a{text-decoration:underline}
           <div class="mk-site"><div class="topo-s"></div><div class="corpo-s"><div class="linha-s"></div><div class="linha-s" style="width:45%"></div><div class="btn-s"></div></div></div>
         </div></div></div>
       <div class="feature-texto">
-        <h3>Seu salão merece um site com a sua cara.</h3>
-        <p>Você não precisa contratar designer, programador ou agência.</p>
+        <h3>Seu próprio site de agendamento, com a cara do seu salão.</h3>
+        <p>Seu site já fica conectado à sua agenda. Sua cliente entra, escolhe o serviço e o horário e agenda sem precisar falar com o salão.</p>
         <p class="forte">Logo. Cores. Fotos. Serviços.</p>
-        <p>O Amora cria seu espaço de agendamento com a identidade do seu salão — para sua cliente sentir que está entrando no seu negócio, não em um sistema genérico.</p>
+        <p>Sem designer, sem programador e sem agência.</p>
       </div>
     </div>
 
@@ -301,30 +321,43 @@ footer a{text-decoration:underline}
     </div>
   </div>
 </section>
+
+<!-- PROVA SOCIAL: ainda não há depoimentos reais, então a seção fica desligada.
+     Quando houver, descomente, troque pelos textos e nomes REAIS (com autorização) e deixe logo antes de #precos.
+<section>
+  <div class="wrap">
+    <div class="tit-secao"><span>Quem usa</span><h2>Salões que já organizaram a rotina</h2></div>
+    <div class="depoimentos">
+      <figure class="depoimento" style="margin:0"><blockquote>"Minhas clientes passaram a marcar sozinhas."</blockquote><figcaption class="quem"><b>Nome</b> · Nome do salão, cidade</figcaption></figure>
+      <figure class="depoimento" style="margin:0"><blockquote>"Parei de perder tempo respondendo mensagem de horário."</blockquote><figcaption class="quem"><b>Nome</b> · Nome do salão, cidade</figcaption></figure>
+      <figure class="depoimento" style="margin:0"><blockquote>"Consegui trazer clientes que estavam há meses sem voltar."</blockquote><figcaption class="quem"><b>Nome</b> · Nome do salão, cidade</figcaption></figure>
+    </div>
+  </div>
 </section>
+-->
 
 <section id="precos" class="bg-precos">
   <div class="wrap">
     <div class="tit-secao">
       <span>Planos</span>
-      <h2>Comece de graça. <span class="grad">Cresça sem trocar de sistema.</span></h2>
-      <p>Use sem custo até 50 clientes. Sem prazo pra acabar — quando o salão crescer, é só assinar.</p>
+      <h2>Comece com R$0. <span class="grad">Cresça quando o salão crescer.</span></h2>
+      <p>Grátis até 50 clientes. Sem cartão de crédito. Sem prazo para acabar.</p>
     </div>
     <div class="grid-precos">
       <div class="plano">
-        <h3>Grátis</h3>
+        <h3>Plano Grátis</h3>
         <p class="publico">Para quem está começando.</p>
-        <div class="preco">Grátis</div>
+        <div class="preco">R$ 0<small>/mês</small></div>
         <div class="limite">Até <b>50 clientes</b> · até <b>2 profissionais</b></div>
         <ul class="plano-lista">
           <li>Agendamento online 24h</li>
-          <li>Mini CRM (fiéis, novas e sumidas)</li>
+          <li>Clientes novas, fiéis e sumidas</li>
           <li>Fidelidade e cupons automáticos</li>
           <li>Comissões calculadas sozinhas</li>
-          <li>Desempenho do dia e do mês</li>
+          <li>Faturamento do dia e do mês</li>
           <li>Site com a cara do seu salão</li>
         </ul>
-        <a class="btn btn-linha" style="width:100%" href="admin.html#criar-conta">Começar grátis</a>
+        <a class="btn btn-linha" style="width:100%" href="admin.html#criar-conta">Criar meu salão grátis</a>
       </div>
       <div class="plano destaque">
         <span class="plano-selo">⭐ Mais escolhido</span>
@@ -334,14 +367,14 @@ footer a{text-decoration:underline}
         <div class="limite">Até <b>200 clientes</b> · <b>profissionais ilimitadas</b></div>
         <ul class="plano-lista">
           <li>Agendamento online 24h</li>
-          <li>Mini CRM (fiéis, novas e sumidas)</li>
+          <li>Clientes novas, fiéis e sumidas</li>
           <li>Fidelidade e cupons automáticos</li>
           <li>Comissões calculadas sozinhas</li>
-          <li>Desempenho do dia e do mês</li>
+          <li>Faturamento do dia e do mês</li>
           <li>Site com a cara do seu salão</li>
           <li><b>Projeção e tendência de faturamento</b></li>
         </ul>
-        <a class="btn btn-primario" style="width:100%" href="admin.html#criar-conta">Começar grátis</a>
+        <a class="btn btn-primario" style="width:100%" href="admin.html#criar-conta">Criar meu salão grátis</a>
       </div>
       <div class="plano">
         <h3>Avançado</h3>
@@ -350,32 +383,32 @@ footer a{text-decoration:underline}
         <div class="limite"><b>Clientes ilimitadas</b> · <b>profissionais ilimitadas</b></div>
         <ul class="plano-lista">
           <li>Agendamento online 24h</li>
-          <li>Mini CRM (fiéis, novas e sumidas)</li>
+          <li>Clientes novas, fiéis e sumidas</li>
           <li>Fidelidade e cupons automáticos</li>
           <li>Comissões calculadas sozinhas</li>
-          <li>Desempenho do dia e do mês</li>
+          <li>Faturamento do dia e do mês</li>
           <li>Site com a cara do seu salão</li>
           <li><b>Projeção e tendência de faturamento</b></li>
         </ul>
-        <a class="btn btn-linha" style="width:100%" href="admin.html#criar-conta">Começar grátis</a>
+        <a class="btn btn-linha" style="width:100%" href="admin.html#criar-conta">Criar meu salão grátis</a>
       </div>
     </div>
-    <p class="aviso-planos">O plano Grátis não tem prazo pra acabar — use enquanto fizer sentido pro seu salão.<br>Quando crescer, é só assinar: mais clientes, mais profissionais e relatórios avançados.</p>
+    <p class="aviso-planos">O plano Grátis não tem prazo para acabar. Todo salão começa nele, sem cartão.<br>Quando crescer, é só assinar: mais clientes, mais profissionais e projeção de faturamento.</p>
   </div>
 </section>
 
 <section>
   <div class="cta-final">
-    <h2>Mais tempo para atender.<br>Mais controle para administrar.</h2>
+    <h2>Comece com R$0. Seu salão organizado, suas clientes voltando.</h2>
     <p>Agenda, clientes, fidelidade, comissões e faturamento em um só lugar.</p>
-    <a class="btn btn-primario" href="admin.html#criar-conta">Começar grátis</a>
-    <p class="micro">Grátis até 50 clientes. Sem cartão de crédito.</p>
+    <a class="btn btn-primario" href="admin.html#criar-conta">Criar meu salão grátis</a>
+    <p class="micro">Grátis até 50 clientes. Sem cartão de crédito. Sem prazo para acabar.</p>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <p>Amora — sistema de gestão para salões de beleza</p>
+    <p>Amora — agenda e clientes voltando para o seu salão</p>
     <p><a href="https://wa.me/5513997748468" target="_blank" rel="noopener">Falar com o suporte no WhatsApp</a></p>
   </div>
 </footer>
