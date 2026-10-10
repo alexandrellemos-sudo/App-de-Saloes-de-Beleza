@@ -14,6 +14,22 @@ if(/access_token=|error_description=|type=recovery/.test(location.hash) || /(^|[
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Amora — Agenda online e clientes voltando para o seu salão</title>
 <meta name="description" content="Agenda online, clientes que voltam, fidelidade, comissões e faturamento em um só lugar. Crie o seu salão grátis: sem cartão, sem prazo para acabar, grátis até 50 clientes.">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Amora">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Amora — Seu salão organizado. Seus horários preenchidos. Seus clientes voltando.">
+<meta property="og:description" content="Agenda online, clientes, fidelidade, comissões e faturamento em um só lugar. Grátis até 50 clientes, sem cartão e sem prazo para acabar.">
+<meta property="og:url" content="https://amorasaloes.com.br/">
+<meta property="og:image" content="https://amorasaloes.com.br/og-amora.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://amorasaloes.com.br/og-amora.png">
+<meta name="theme-color" content="#3E1F5C">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -33,11 +49,14 @@ h1,h2,h3{font-family:Sora,sans-serif;font-weight:800;line-height:1.15;margin:0}
 img{max-width:100%;display:block}
 a{color:inherit}
 .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
-.logo{font-family:Sora,sans-serif;font-weight:800;font-size:1.5rem;background:linear-gradient(120deg,var(--vinho),var(--rosa));-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-family:Sora,sans-serif;font-weight:800;font-size:1.5rem}
+.logo img{width:32px;height:32px}
+.logo span{background:linear-gradient(120deg,var(--vinho),var(--rosa));-webkit-background-clip:text;background-clip:text;color:transparent}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:14px 26px;font-weight:700;text-decoration:none;font-size:1rem;cursor:pointer}
 .btn-primario{background:linear-gradient(120deg,var(--vinho),var(--rosa));color:#fff;box-shadow:0 10px 24px -10px rgba(224,53,125,.5)}
 .btn-linha{background:transparent;border:1.5px solid var(--linha);color:var(--tinta)}
-.btn-sm{padding:10px 20px;font-size:.9rem}
+.btn-sm{padding:10px 20px;font-size:.9rem;white-space:nowrap}
+@media (max-width:440px){ .topo .wrap{padding-inline:14px} .topo nav{gap:6px} .btn-sm{padding:9px 14px;font-size:.85rem} .logo{font-size:1.3rem;gap:6px} .logo img{width:28px;height:28px} }
 
 /* topo */
 .topo{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb, var(--bg) 88%, transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--linha)}
@@ -186,7 +205,7 @@ footer a{text-decoration:underline}
 
 <div class="topo">
   <div class="wrap">
-    <div class="logo">Amora</div>
+    <a class="logo" href="#" aria-label="Amora"><img src="logo-amora.png" alt="" width="32" height="32"><span>Amora</span></a>
     <nav>
       <a class="link" href="#recursos">Recursos</a>
       <a class="link" href="#precos">Planos</a>

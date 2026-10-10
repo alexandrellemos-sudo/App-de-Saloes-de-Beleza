@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Termos de Serviço — Amora</title>
 <meta name="description" content="Termos de uso do Amora, serviço de agenda e gestão para salões de beleza.">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--vinho:#3E1F5C;--rosa:#E0357D;--blush:#F5EDF8;--tinta:#241536;--suave:#6B5C7D;--linha:#E6D9EC;--bg:#FCFAFD;box-sizing:border-box}
@@ -14,7 +18,9 @@ body{margin:0;background:var(--bg);color:var(--tinta);font:16px/1.7 Figtree,syst
 .wrap{max-width:760px;margin:0 auto;padding:0 20px}
 .topo{border-bottom:1px solid var(--linha)}
 .topo .wrap{display:flex;align-items:center;justify-content:space-between;padding-block:16px;max-width:1100px}
-.logo{font-family:Sora,sans-serif;font-weight:800;font-size:1.5rem;text-decoration:none;background:linear-gradient(120deg,var(--vinho),var(--rosa));-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-family:Sora,sans-serif;font-weight:800;font-size:1.5rem}
+.logo img{width:32px;height:32px}
+.logo span{background:linear-gradient(120deg,var(--vinho),var(--rosa));-webkit-background-clip:text;background-clip:text;color:transparent}
 .voltar{font-size:.92rem;font-weight:600;color:var(--suave);text-decoration:none}
 main{padding-block:44px 64px}
 h1{font-family:Sora,sans-serif;font-weight:800;font-size:clamp(1.8rem,4.5vw,2.4rem);line-height:1.15;margin:0 0 8px}
@@ -30,7 +36,7 @@ footer a{color:inherit}
 </style>
 </head>
 <body>
-<div class="topo"><div class="wrap"><a class="logo" href="/">Amora</a><a class="voltar" href="/">Voltar ao site</a></div></div>
+<div class="topo"><div class="wrap"><a class="logo" href="/" aria-label="Amora"><img src="logo-amora.png" alt="" width="32" height="32"><span>Amora</span></a><a class="voltar" href="/">Voltar ao site</a></div></div>
 <main><div class="wrap">
 <h1>Termos de Serviço</h1>
 <p class="data">Última atualização: 10 de outubro de 2026</p>
