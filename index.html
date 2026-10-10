@@ -74,6 +74,9 @@ a{color:inherit}
 .selo b{background:var(--rosa);color:#fff;border-radius:999px;padding:2px 9px;font-size:.76rem}
 .hero h1{font-size:clamp(2rem,5vw,3.4rem);max-width:19ch}
 .hero h1 .grad,.tit-secao h2 .grad{background:linear-gradient(120deg,var(--vinho),var(--rosa));-webkit-background-clip:text;background-clip:text;color:transparent}
+.caret{display:inline-block;width:3px;height:.85em;margin-left:3px;vertical-align:-.06em;background:var(--rosa);border-radius:2px;animation:piscar 1s steps(1) infinite}
+@keyframes piscar{50%{opacity:0}}
+@media (prefers-reduced-motion: reduce){ .caret{display:none} }
 .hero p{color:var(--suave);font-size:1.12rem;max-width:50ch;margin:20px 0 0}
 .hero p+p{margin-top:12px}
 .hero .acoes{margin-top:30px}
@@ -218,7 +221,7 @@ footer a{text-decoration:underline}
 <header class="hero">
   <div class="wrap">
     <span class="selo"><b>R$ 0</b> GRÁTIS ATÉ 50 CLIENTES</span>
-    <h1>Seu salão organizado. Seus horários preenchidos. <span class="grad">Seus clientes voltando.</span></h1>
+    <h1 id="titulo" aria-label="Seu salão organizado. Seu salão com agenda cheia. Seu salão com as clientes voltando.">Seu salão <span class="grad"><span id="rot" aria-hidden="true">organizado.</span><span class="caret" aria-hidden="true"></span></span></h1>
     <p>O Amora coloca agenda online, clientes, fidelidade, comissões e faturamento em um só lugar.</p>
     <p>Pare de depender do WhatsApp, da agenda de papel e das planilhas para fazer o salão funcionar.</p>
     <div class="acoes">
@@ -433,5 +436,37 @@ footer a{text-decoration:underline}
   </div>
 </footer>
 
+<script>
+/* depois de "Seu salão", o complemento se apaga e se redigita. Sem JS ou com "reduzir movimento", fica "organizado." parado. */
+(function(){
+  var rot=document.getElementById('rot'), h1=document.getElementById('titulo');
+  if(!rot||!h1) return;
+  var palavras=['organizado.','com agenda cheia.','com as clientes voltando.'];
+  var reduz=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduz) return;
+  /* trava a altura do título pela maior variação, para o resto da página não "pular" enquanto digita */
+  function travar(){
+    var atual=rot.textContent, max=0;
+    h1.style.minHeight='';
+    palavras.forEach(function(w){ rot.textContent=w; max=Math.max(max,h1.offsetHeight); });
+    rot.textContent=atual; h1.style.minHeight=max+'px';
+  }
+  var t; window.addEventListener('resize',function(){ clearTimeout(t); t=setTimeout(travar,150); });
+  travar();
+  var i=0, n=palavras[0].length, apagando=false;
+  function passo(){
+    var w=palavras[i], delay;
+    if(!apagando){
+      n++; rot.textContent=w.slice(0,n); delay=60;
+      if(n>=w.length){ apagando=true; delay=2300; }
+    }else{
+      n--; rot.textContent=w.slice(0,n); delay=28;
+      if(n<=0){ apagando=false; i=(i+1)%palavras.length; delay=350; }
+    }
+    setTimeout(passo,delay);
+  }
+  setTimeout(passo,2200);
+})();
+</script>
 </body>
 </html>
